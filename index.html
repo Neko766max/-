@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>泡泡大王传奇纪念馆 - 永恒的传奇</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Custom color palette for the theme
+                        bubble: '#9c27b0', // Main purple
+                        bubbleDark: '#7b1fa2', // Darker purple
+                        bubbleLight: '#e1bee7', // Lighter purple
+                        accent: '#ffeb3b', // Yellow accent for highlights
+                        accentDark: '#fbc02d', // Darker yellow
+                    },
+                    fontFamily: {
+                        // Setting the primary font
+                        'sans': ['"Noto Sans SC"', 'sans-serif'],
+                    },
+                    keyframes: {
+                        // Floating animation for elements
+                        floating: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-15px)' },
+                        },
+                        // Flame flickering animation for candles
+                        flicker: {
+                            '0%, 100%': { transform: 'translateX(-50%) scale(1)', opacity: '1' },
+                            '25%': { transform: 'translateX(-50%) scale(0.9)', opacity: '0.8' },
+                            '50%': { transform: 'translateX(-50%) scale(1.1)', opacity: '1' },
+                            '75%': { transform: 'translateX(-50%) scale(0.95)', opacity: '0.9' },
+                        },
+                        // Smoke animation for incense
+                        smoke: {
+                            '0%': { transform: 'translateX(-50%) translateY(0) scale(1)', opacity: '0.6' },
+                            '100%': { transform: 'translateX(-50%) translateY(-80px) scale(3)', opacity: '0' },
+                        },
+                        // Background bubble floating animation
+                        'float-up': {
+                            '0%': { transform: 'translateY(0) translateX(0)', opacity: '0.7' },
+                            '50%': { transform: 'translateX(20px)' }, // Slight horizontal drift
+                            '100%': { transform: 'translateY(-110vh) translateX(0)', opacity: '0' }, // Float off screen
+                        },
+                        // Pulse animation for buttons or highlights
+                        pulse: {
+                            '0%, 100%': { opacity: '1' },
+                            '50%': { opacity: '.5' },
+                        },
+                        // Pop animation for bubble game
+                        pop: {
+                            '0%': { transform: 'scale(0)', opacity: '0' },
+                            '50%': { transform: 'scale(1.2)', opacity: '1' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
+                        },
+                        // Shrink animation for popped bubbles
+                        shrink: {
+                            '0%': { transform: 'scale(1)', opacity: '1' },
+                            '100%': { transform: 'scale(0)', opacity: '0' },
+                        }
+                    },
+                    animation: {
+                        // Assigning keyframes to animation utilities
+                        floating: 'floating 3s ease-in-out infinite',
+                        flicker: 'flicker 1.5s infinite alternate',
+                        smoke: 'smoke 4s infinite linear',
+                        'float-up': 'float-up 15s ease-in-out infinite', // Base duration
+                        pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        pop: 'pop 0.3s ease-out forwards',
+                        shrink: 'shrink 0.3s ease-in forwards',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Applying base font and background */
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f8fafc; /* Lighter gray background */
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            position: relative; /* Needed for absolute positioned bubbles */
+            min-height: 100vh;
+        }
+
+        /* Gradient background for subtle effect */
+        .bubble-bg-gradient {
+            background: linear-gradient(180deg, #f3e5f5 0%, #f8fafc 30%); /* Light purple to light gray */
+        }
+
+        /* Text shadow for glowing effect */
+        .glow {
+            text-shadow: 0 0 15px rgba(225, 190, 231, 0.9), 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Card hover effect */
+        .shrine-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Smooth, bouncy transition */
+            transform-style: preserve-3d;
+            will-change: transform, box-shadow; /* Performance optimization */
+        }
+
+        .shrine-card:hover {
+            transform: translateY(-8px) rotateX(3deg) scale(1.03); /* Enhanced hover effect */
+            box-shadow: 0 25px 50px -12px rgba(123, 31, 162, 0.25); /* Softer, larger shadow */
+        }
+
+        /* Candle styling */
+        .candle {
+            width: 25px; /* Slightly smaller */
+            height: 50px;
+            background: linear-gradient(to top, #ffb74d, #fff176); /* Orange to yellow gradient */
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            margin: 0 auto; /* Center candle */
+            box-shadow: 0 0 15px rgba(255, 183, 77, 0.7); /* Softer glow */
+        }
+
+        /* Candle flame */
+        .candle::before {
+            content: '';
+            position: absolute;
+            top: -12px; /* Position flame */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 18px;
+            background: radial-gradient(circle, white, #ffeb3b, #ffb74d); /* Realistic flame gradient */
+            border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%; /* Flame shape */
+            filter: blur(4px); /* Soft blur */
+            animation: flicker 1.5s infinite alternate; /* Use defined flicker animation */
+        }
+
+        /* Incense styling */
+        .incense {
+            width: 5px;
+            height: 80px; /* Shorter incense */
+            background: linear-gradient(to top, #6d4c41, #a1887f); /* Brown gradient */
+            position: relative;
+            margin: 0 auto; /* Center incense */
+            border-radius: 2px;
+        }
+
+        /* Incense smoke effect */
+        .incense::after {
+            content: '';
+            position: absolute;
+            top: -10px; /* Position smoke origin */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px; /* Smaller smoke origin */
+            height: 8px;
+            background: rgba(200, 200, 200, 0.5); /* Semi-transparent gray */
+            border-radius: 50%;
+            filter: blur(3px);
+            animation: smoke 4s infinite linear; /* Use defined smoke animation */
+            animation-delay: 0.5s; /* Stagger smoke start */
+        }
+
+        /* Tribute message bubble style */
+        .tribute-message {
+            position: relative;
+            padding: 1rem 1.5rem; /* More padding */
+            background: white;
+            border-radius: 12px; /* More rounded */
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Softer shadow */
+            border-left: 4px solid var(--bubble-color, #9c27b0); /* Accent border */
+        }
+
+        .tribute-message::before {
+            /* Speech bubble tail */
+            content: '';
+            position: absolute;
+            top: 15px; /* Adjust position */
+            left: -10px; /* Position tail outside */
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-right: 10px solid var(--bubble-color, #9c27b0); /* Pointing left */
+        }
+
+        /* Style for the API section */
+        #daily-wisdom {
+            background: linear-gradient(135deg, #e1bee7, #ede7f6); /* Light purple gradient */
+            border: 1px solid #ce93d8;
+            transition: all 0.3s ease;
+        }
+        #daily-wisdom:hover {
+            box-shadow: 0 8px 20px rgba(123, 31, 162, 0.15);
+            transform: translateY(-3px);
+        }
+        #tomato-english-sentence {
+            font-style: italic;
+            color: #6a1b9a; /* Darker purple text */
+        }
+
+        /* Timeline styling */
+        .timeline {
+            position: relative;
+            padding: 2rem 0;
+        }
+        .timeline::before { /* The vertical line */
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100%;
+            background-color: #e1bee7; /* Light purple line */
+            border-radius: 2px;
+        }
+        .timeline-item {
+            position: relative;
+            width: 50%;
+            padding: 1rem 2rem;
+            box-sizing: border-box;
+        }
+        /* Position items left and right */
+        .timeline-item:nth-child(odd) {
+            left: 0;
+            padding-right: 3rem; /* Space from center line */
+            text-align: right;
+        }
+        .timeline-item:nth-child(even) {
+            left: 50%;
+            padding-left: 3rem; /* Space from center line */
+            text-align: left;
+        }
+        /* The circle on the timeline */
+        .timeline-dot {
+            content: '';
+            position: absolute;
+            top: 1.5rem; /* Align with content */
+            width: 16px;
+            height: 16px;
+            background-color: white;
+            border: 4px solid #9c27b0; /* Bubble purple border */
+            border-radius: 50%;
+            z-index: 1;
+        }
+        .timeline-item:nth-child(odd) .timeline-dot {
+            right: -8px; /* Position on the line */
+            transform: translateX(50%);
+        }
+        .timeline-item:nth-child(even) .timeline-dot {
+            left: -8px; /* Position on the line */
+            transform: translateX(-50%);
+        }
+        .timeline-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        .timeline-content:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(123, 31, 162, 0.15);
+        }
+        .timeline-date {
+            font-weight: bold;
+            color: #7b1fa2; /* Bubble dark purple */
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        /* Bubble Pop Game Styles */
+        #bubble-game-canvas {
+            background-color: #e1f5fe; /* Light blue sky */
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            width: 100%;
+            height: 400px; /* Fixed height */
+            display: block; /* Remove extra space below canvas */
+        }
+
+        /* Ensure footer stays at bottom */
+        body { display: flex; flex-direction: column; }
+        main { flex-grow: 1; }
+
+        /* Responsive adjustments for timeline */
+        @media (max-width: 768px) {
+            .timeline::before {
+                left: 20px; /* Move line to the left */
+                transform: translateX(0);
+            }
+            .timeline-item {
+                width: 100%;
+                padding-left: 50px; /* Space for items */
+                padding-right: 1rem;
+                left: 0 !important; /* Reset left positioning */
+                text-align: left !important; /* Align all text left */
+            }
+            .timeline-item:nth-child(odd),
+            .timeline-item:nth-child(even) {
+                padding-left: 50px;
+                padding-right: 1rem;
+                left: 0;
+                text-align: left;
+            }
+            .timeline-dot {
+                left: 20px !important; /* Align dot with the line */
+                transform: translateX(-50%) !important;
+            }
+            .timeline-item:nth-child(odd) .timeline-dot,
+            .timeline-item:nth-child(even) .timeline-dot {
+                 left: 20px;
+                 transform: translateX(-50%);
+            }
+        }
+
+    </style>
+</head>
+
+<body class="bubble-bg-gradient min-h-screen flex flex-col">
+    <header class="bg-gradient-to-r from-bubbleDark to-bubble text-white py-10 relative overflow-hidden shadow-lg">
+        <div class="absolute inset-0 flex items-center justify-center opacity-50">
+            <div class="candle animate-floating" style="animation-delay: 0.2s;"></div>
+            <div class="incense mx-12 animate-floating" style="animation-delay: 0.7s;"></div>
+            <div class="candle animate-floating" style="animation-delay: 1.2s;"></div>
+        </div>
+        <div class="container mx-auto px-4 relative z-10 text-center">
+            <h1 class="text-5xl md:text-7xl font-bold mb-4 glow drop-shadow-lg">泡泡大王纪念馆</h1>
+            <p class="text-xl md:text-2xl font-light">永恒的南中传奇 (2010 - 9999)</p>
+        </div>
+    </header>
+
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-wrap justify-between items-center py-3">
+                <div class="flex flex-wrap space-x-1 md:space-x-2 mb-2 md:mb-0">
+                    <a href="#about" class="px-3 py-2 text-sm md:text-base text-bubbleDark font-medium hover:bg-bubbleLight rounded-full transition duration-300">生平事迹</a>
+                    <a href="#timeline" class="px-3 py-2 text-sm md:text-base text-bubbleDark font-medium hover:bg-bubbleLight rounded-full transition duration-300">传奇历程</a>
+                    <a href="#gallery" class="px-3 py-2 text-sm md:text-base text-bubbleDark font-medium hover:bg-bubbleLight rounded-full transition duration-300">光辉瞬间</a>
+                    <a href="#wisdom" class="px-3 py-2 text-sm md:text-base text-bubbleDark font-medium hover:bg-bubbleLight rounded-full transition duration-300">每日智慧</a>
+                    <a href="#tributes" class="px-3 py-2 text-sm md:text-base text-bubbleDark font-medium hover:bg-bubbleLight rounded-full transition duration-300">留言祭拜</a>
+                    <a href="#quotes" class="px-3 py-2 text-sm md:text-base text-bubbleDark font-medium hover:bg-bubbleLight rounded-full transition duration-300">大王语录</a>
+                    <a href="#game" class="px-3 py-2 text-sm md:text-base text-bubbleDark font-medium hover:bg-bubbleLight rounded-full transition duration-300">泡泡游戏</a>
+                    <a href="#music" class="px-3 py-2 text-sm md:text-base text-bubbleDark font-medium hover:bg-bubbleLight rounded-full transition duration-300">灵魂乐章</a>
+                </div>
+                <div>
+                    <a href="https://qm.qq.com/q/SgWPPeBFeu" target="_blank" class="bg-bubble hover:bg-bubbleDark text-white px-4 py-2 rounded-full font-medium transition duration-300 flex items-center text-sm md:text-base shadow hover:shadow-lg transform hover:-translate-y-0.5">
+                        <i class="fab fa-qq mr-2"></i> 联系泡泡
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 py-12 flex-grow">
+
+        <section id="about" class="mb-20 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-bubbleDark mb-3">生平事迹</h2>
+                <p class="text-lg text-gray-600">一位不朽的校园传奇</p>
+                <div class="w-24 h-1 bg-gradient-to-r from-bubble to-accent mx-auto mt-4 rounded-full"></div>
+            </div>
+            <div class="grid md:grid-cols-5 gap-8 items-center">
+                <div class="md:col-span-3 shrine-card bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+                    <h3 class="text-2xl font-bold text-bubbleDark mb-5 flex items-center"><i class="fas fa-scroll mr-3 text-bubble"></i>泡泡大王传奇一生</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">泡泡大王，一位生于2010年，预计将在9999年羽化登仙（理论上永生不灭）的非凡人物。作为南中七二八三班的灵魂人物，他以其深不可测的抗压能力和征服老gay的独特个人魅力，在南中校园的历史长河中留下了浓墨重彩的一笔。</p>
+                    <p class="text-gray-700 mb-4 leading-relaxed">他的传奇并非始于惊天动地的伟业，而是源于校园生活的点滴。凭借其独创的"泡泡哲学"——一种能在任何压力下保持内心平静甚至倒头就睡的境界，以及无人能敌的"嘴炮艺术"，他不仅化解了无数次学业与生活的危机，更意外地赢得了校园内众多老gay的敬佩与追随，成就了一段段令人津津乐道的佳话。</p>
+                    <p class="text-gray-700 leading-relaxed">面对挑战，他总是淡然一笑，留下一句经典的"就这？"，这种超凡脱俗、举重若轻的态度，成为了无数后辈学子面对困境时的精神灯塔。他的存在，本身就是对“压力”二字的终极藐视。</p>
+                </div>
+                <div class="md:col-span-2 relative group">
+                    <img src="https://s21.ax1x.com/2025/04/04/pE6dyM6.jpg" alt="泡泡大王圣象 " class="w-full h-auto rounded-xl shadow-xl transform group-hover:scale-105 transition-transform duration-500 ease-in-out">
+                    <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-bubble to-bubbleDark text-white px-5 py-2 rounded-full font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 group-hover:-bottom-6 transition-all duration-500 ease-in-out">
+                        <i class="fas fa-star mr-1 text-yellow-300"></i> 传奇永存 <i class="fas fa-star ml-1 text-yellow-300"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="achievements" class="mb-20 scroll-mt-20 bg-white p-10 rounded-xl shadow-lg border border-gray-100">
+            <div class="text-center mb-10">
+                 <h2 class="text-3xl font-bold text-bubbleDark mb-3">不朽功绩</h2>
+                 <div class="w-20 h-1 bg-gradient-to-r from-bubble to-accent mx-auto rounded-full"></div>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center p-6 border border-bubbleLight rounded-lg hover:bg-bubbleLight/30 transition duration-300 transform hover:-translate-y-2 hover:shadow-md">
+                    <div class="text-bubble text-5xl mb-4">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-bubbleDark">终极抗压</h3>
+                    <p class="text-gray-600 text-sm">泰山崩于前而色不变，宇宙爆炸也能安然入睡。重新定义“淡定”。</p>
+                </div>
+                <div class="text-center p-6 border border-bubbleLight rounded-lg hover:bg-bubbleLight/30 transition duration-300 transform hover:-translate-y-2 hover:shadow-md">
+                    <div class="text-bubble text-5xl mb-4">
+                        <i class="fas fa-magnet"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-bubbleDark">老gay磁铁</h3>
+                    <p class="text-gray-600 text-sm">无需言语，魅力自来。南中老gay无不为之倾倒，堪称行走的荷尔蒙（Gay版）。</p>
+                </div>
+                <div class="text-center p-6 border border-bubbleLight rounded-lg hover:bg-bubbleLight/30 transition duration-300 transform hover:-translate-y-2 hover:shadow-md">
+                    <div class="text-bubble text-5xl mb-4">
+                        <i class="fas fa-infinity"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-bubbleDark">理论永生</h3>
+                    <p class="text-gray-600 text-sm">生于2010，预计卒于9999。泡泡精神超越时空，永远激励后人。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="timeline" class="mb-20 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-bubbleDark mb-3">传奇历程</h2>
+                <p class="text-lg text-gray-600">追寻泡泡大王的足迹</p>
+                <div class="w-24 h-1 bg-gradient-to-r from-bubble to-accent mx-auto mt-4 rounded-full"></div>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-date">2010年</span>
+                        <h4 class="font-semibold text-lg mb-2 text-bubbleDark">传奇诞生</h4>
+                        <p class="text-gray-600 text-sm">泡泡大王降临凡间，自带抗压光环，预示着不平凡的一生。</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-date">2023年</span>
+                        <h4 class="font-semibold text-lg mb-2 text-bubbleDark">初入南中</h4>
+                        <p class="text-gray-600 text-sm">进入南沙河中学，其独特的“泡泡”气场开始引起注意，初步展现抗压天赋。</p>
+                    </div>
+                </div>
+                 <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-date">2023年</span>
+                        <h4 class="font-semibold text-lg mb-2 text-bubbleDark">“老gay”磁场显现</h4>
+                        <p class="text-gray-600 text-sm">个人魅力大爆发，无意间吸引了校园内众多“老gay”的目光，成为焦点人物。</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-date">2025年</span>
+                        <h4 class="font-semibold text-lg mb-2 text-bubbleDark">纪念馆建立</h4>
+                        <p class="text-gray-600 text-sm">为颂扬其不朽精神，粉丝自发建立线上纪念馆，传奇得以广泛流传。</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-date">未来某日</span>
+                        <h4 class="font-semibold text-lg mb-2 text-bubbleDark">“就这？”时刻</h4>
+                        <p class="text-gray-600 text-sm">面对期末考试/工作DDL/宇宙危机，泡泡大王留下了经典的“就这？”，随后安然入睡，抗压能力达到顶峰。</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-date">9999年 (预计)</span>
+                        <h4 class="font-semibold text-lg mb-2 text-bubbleDark">羽化登仙</h4>
+                        <p class="text-gray-600 text-sm">完成在人间的历练，泡泡大王精神升华，成为永恒传说，肉身可能已不重要。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="gallery" class="mb-20 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-bubbleDark mb-3">光辉瞬间</h2>
+                <p class="text-lg text-gray-600">捕捉大王的非凡风采</p>
+                <div class="w-24 h-1 bg-gradient-to-r from-bubble to-accent mx-auto mt-4 rounded-full"></div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="shrine-card overflow-hidden rounded-lg shadow-lg group relative">
+                    <img src="https://placehold.co/600x400/e1bee7/7b1fa2?text=沉思的泡泡" alt="沉思的泡泡 " class="w-full h-48 object-cover transform group-hover:scale-110 transition duration-500 ease-in-out">
+                    <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition duration-500 flex items-center justify-center">
+                        <p class="text-white text-center px-4">泡泡大王在思考宇宙的奥秘</p>
+                    </div>
+                </div>
+                <div class="shrine-card overflow-hidden rounded-lg shadow-lg group relative">
+                    <img src="https://placehold.co/600x400/d1c4e9/5e35b1?text=淡定时刻" alt="淡定时刻 " class="w-full h-48 object-cover transform group-hover:scale-110 transition duration-500 ease-in-out">
+                     <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition duration-500 flex items-center justify-center">
+                        <p class="text-white text-center px-4">面对疾风吧！</p>
+                    </div>
+                </div>
+                <div class="shrine-card overflow-hidden rounded-lg shadow-lg group relative">
+                    <img src="https://placehold.co/600x400/c5cae9/3949ab?text=魅力四射" alt="魅力四射 " class="w-full h-48 object-cover transform group-hover:scale-110 transition duration-500 ease-in-out">
+                     <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition duration-500 flex items-center justify-center">
+                        <p class="text-white text-center px-4">老gay们无法抗拒的眼神</p>
+                    </div>
+                </div>
+                <div class="shrine-card overflow-hidden rounded-lg shadow-lg group relative">
+                    <img src="https://placehold.co/600x400/b3e5fc/0288d1?text=呼呼大睡" alt="呼呼大睡 " class="w-full h-48 object-cover transform group-hover:scale-110 transition duration-500 ease-in-out">
+                     <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition duration-500 flex items-center justify-center">
+                        <p class="text-white text-center px-4">终极抗压形态</p>
+                    </div>
+                </div>
+                 <div class="shrine-card overflow-hidden rounded-lg shadow-lg group relative">
+                    <img src="https://placehold.co/600x400/ffccbc/e64a19?text=王之蔑视" alt="王之蔑视 " class="w-full h-48 object-cover transform group-hover:scale-110 transition duration-500 ease-in-out">
+                     <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition duration-500 flex items-center justify-center">
+                        <p class="text-white text-center px-4">"就这？"</p>
+                    </div>
+                </div>
+                 <div class="shrine-card overflow-hidden rounded-lg shadow-lg group relative">
+                    <img src="https://placehold.co/600x400/dcedc8/689f38?text=指点江山" alt="指点江山 " class="w-full h-48 object-cover transform group-hover:scale-110 transition duration-500 ease-in-out">
+                     <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition duration-500 flex items-center justify-center">
+                        <p class="text-white text-center px-4">泡泡大王传授人生经验</p>
+                    </div>
+                </div>
+                 <div class="shrine-card overflow-hidden rounded-lg shadow-lg group relative">
+                    <img src="https://placehold.co/600x400/fff9c4/fbc02d?text=粉丝见面" alt="粉丝见面 " class="w-full h-48 object-cover transform group-hover:scale-110 transition duration-500 ease-in-out">
+                     <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition duration-500 flex items-center justify-center">
+                        <p class="text-white text-center px-4">被老gay们簇拥的泡泡</p>
+                    </div>
+                </div>
+                 <div class="shrine-card overflow-hidden rounded-lg shadow-lg group relative">
+                    <img src="https://img0.baidu.com/it/u=787017744,3184270886&fm=253&fmt=auto&app=138&f=JPEG?w=750&h=500" alt="经典泡泡 " class="w-full h-48 object-cover transform group-hover:scale-110 transition duration-500 ease-in-out" onerror="this.src='https://placehold.co/600x400/eeeeee/999999?text=Image+Not+Found'">
+                     <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition duration-500 flex items-center justify-center">
+                        <p class="text-white text-center px-4">永恒的泡泡形象</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+         <section class="bg-bubbleDark text-white p-6 rounded-lg shadow-md animate-fadeIn" style="animation-delay: 0.4s;">
+            <h3 class="text-xl font-semibold mb-3 text-accent flex items-center">
+                <i class="fas fa-lightbulb mr-2 animate-floating"></i> 每日智慧
+            </h3>
+            <p id="daily-wisdom" class="text-lg italic min-h-[2em]">
+                正在加载智慧... <i class="fas fa-spinner fa-spin ml-2"></i>
+            </p>
+        </section>
+
+        </main>
+
+    <footer class="bg-bubble text-white p-4 mt-8 text-center">
+        <p>&copy; 2025 泡泡大王传奇纪念馆. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // --- Fetch Daily Wisdom ---
+        function fetchDailyWisdom() {
+            const wisdomElement = document.getElementById('daily-wisdom');
+            // Use the new API endpoint provided by the user
+            fetch('https://api.cenguigui.cn/api/yiyan/') // <-- MODIFIED: Using the new API URL
+                .then(response => {
+                    // Check if the request was successful
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json(); // Parse the JSON response
+                })
+                .then(data => {
+                    // Log the data structure to console for debugging (optional)
+                    // console.log("API Response:", data);
+
+                    // --- IMPORTANT: Access the wisdom text from the response ---
+                    // Based on checking the API, the wisdom text is in the 'data' field.
+                    const wisdomText = data.data; // <-- MODIFIED: Accessing data using .data based on API structure
+
+                    if (wisdomElement) {
+                        if (wisdomText) {
+                             // Display the fetched wisdom
+                            wisdomElement.innerHTML = wisdomText; // Use innerHTML to render potential formatting
+                        } else {
+                            // Handle cases where the API returns data but no text
+                            wisdomElement.innerText = '今日无语，保持思考。';
+                        }
+                    }
+                })
+                .catch(error => {
+                    // Log errors to the console
+                    console.error('Error fetching daily wisdom:', error);
+                    if (wisdomElement) {
+                        // Display an error message to the user
+                        wisdomElement.innerText = '智慧加载失败，请稍后再试。';
+                    }
+                });
+        }
+
+        // --- Custom Alert Function ---
+         function showCustomAlert(message, type = 'info') {
+             // Remove existing alert if any
+             const existingAlert = document.getElementById('custom-alert-box');
+             if (existingAlert) {
+                 existingAlert.remove();
+             }
+
+             // Determine colors based on type
+             let bgColor, textColor, iconClass;
+             switch (type) {
+                 case 'success':
+                     bgColor = 'bg-green-100';
+                     textColor = 'text-green-700';
+                     iconClass = 'fas fa-check-circle';
+                     break;
+                 case 'error':
+                     bgColor = 'bg-red-100';
+                     textColor = 'text-red-700';
+                     iconClass = 'fas fa-exclamation-triangle';
+                     break;
+                 case 'warning':
+                     bgColor = 'bg-yellow-100';
+                     textColor = 'text-yellow-700';
+                     iconClass = 'fas fa-exclamation-circle';
+                     break;
+                 default: // info
+                     bgColor = 'bg-blue-100';
+                     textColor = 'text-blue-700';
+                     iconClass = 'fas fa-info-circle';
+             }
+
+             // Create alert elements
+             const alertBox = document.createElement('div');
+             alertBox.id = 'custom-alert-box';
+             alertBox.className = `fixed top-5 right-5 ${bgColor} ${textColor} p-4 rounded-lg shadow-lg flex items-center max-w-sm z-50 opacity-0 animate-fadeIn`;
+             alertBox.style.transition = 'opacity 0.5s ease-in-out'; // Ensure transition is set
+
+             const icon = document.createElement('i');
+             icon.className = `${iconClass} mr-3 text-xl`;
+             alertBox.appendChild(icon);
+
+             const messageSpan = document.createElement('span');
+             messageSpan.innerText = message;
+             alertBox.appendChild(messageSpan);
+
+             const closeButton = document.createElement('button');
+             closeButton.id = 'custom-alert-close';
+             closeButton.className = `${textColor} ml-auto pl-3 text-2xl font-bold leading-none hover:opacity-75`;
+             closeButton.innerHTML = '&times;'; // Use HTML entity for 'x'
+             alertBox.appendChild(closeButton);
+
+             // Append to body and fade in
+             document.body.appendChild(alertBox);
+             setTimeout(() => { alertBox.style.opacity = '1'; }, 10); // Small delay to ensure transition works
+
+             // Close button functionality
+             closeButton.onclick = () => {
+                 alertBox.style.opacity = '0';
+                 setTimeout(() => alertBox.remove(), 500); // Remove after fade out
+             };
+
+             // Optional: Auto-close after a delay
+             // setTimeout(() => {
+             //     if (document.getElementById('custom-alert-box')) { // Check if still exists
+             //         alertBox.style.opacity = '0';
+             //         setTimeout(() => alertBox.remove(), 500);
+             //     }
+             // }, 8000); // Auto-close after 8 seconds
+         }
+
+
+        // --- Initialization ---
+        // Add event listener to fetch wisdom when the page content is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchDailyWisdom(); // Fetch wisdom on page load
+
+            // Example usage of the custom alert (can be removed or triggered by other events)
+            // showCustomAlert('欢迎访问纪念馆!', 'success');
+            // setTimeout(() => showCustomAlert('这是一个警告信息。', 'warning'), 3000);
+            // setTimeout(() => showCustomAlert('发生了一个错误！', 'error'), 6000);
+        });
+
+        // --- Utilities ---\
+        // (Custom scrollbar styles are now in the <style> tag in <head>)
+
+    </script>
+
+
+        <section id="tributes" class="mb-20 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-bubbleDark mb-3">留言祭拜</h2>
+                <p class="text-lg text-gray-600">表达您对大王的崇敬之情</p>
+                <div class="w-24 h-1 bg-gradient-to-r from-bubble to-accent mx-auto mt-4 rounded-full"></div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-10">
+                <div class="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+                    <h3 class="text-2xl font-bold text-bubbleDark mb-6 text-center">虔诚祭拜</h3>
+                    <div class="flex justify-center space-x-12 mb-8">
+                        <div class="text-center">
+                            <div class="candle mx-auto mb-2" id="candle1-container">
+                                </div>
+                            <button onclick="lightCandle('candle1')" class="bg-bubble hover:bg-bubbleDark text-white px-4 py-2 rounded-full text-sm transition duration-300 shadow hover:shadow-md transform hover:-translate-y-0.5">
+                                <i class="fas fa-fire mr-1"></i> 点燃圣烛
+                            </button>
+                        </div>
+                        <div class="text-center">
+                            <div class="incense mx-auto mb-2" id="incense1-container">
+                                </div>
+                            <button onclick="lightIncense('incense1')" class="bg-bubble hover:bg-bubbleDark text-white px-4 py-2 rounded-full text-sm transition duration-300 shadow hover:shadow-md transform hover:-translate-y-0.5">
+                                <i class="fas fa-stream mr-1"></i> 敬献心香
+                            </button>
+                        </div>
+                    </div>
+                    <form id="tribute-form" class="space-y-5">
+                        <div>
+                            <label for="name" class="block text-gray-700 mb-2 font-medium">您的尊号</label>
+                            <input type="text" id="name" name="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bubble focus:border-transparent transition duration-300" placeholder="例如：南中老gay-朱gay" required>
+                        </div>
+                        <div>
+                            <label for="message" class="block text-gray-700 mb-2 font-medium">祭拜留言</label>
+                            <textarea id="message" name="message" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bubble focus:border-transparent transition duration-300" placeholder="在此写下您对泡泡大王的敬仰之情..." required></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-bubble to-bubbleDark hover:from-bubbleDark hover:to-bubble text-white px-6 py-3 rounded-lg font-semibold transition duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1">
+                            <i class="fas fa-paper-plane mr-2"></i> 提交祭拜
+                        </button>
+                    </form>
+                     <div id="tribute-success" class="mt-4 p-4 bg-green-100 text-green-700 border border-green-200 rounded-lg text-center hidden">
+                        <i class="fas fa-check-circle mr-2"></i> 留言已成功提交！大王感受到了您的敬意！
+                    </div>
+                </div>
+
+                <div class="h-[600px] overflow-y-auto pr-4 space-y-5 custom-scrollbar">
+                     <h3 class="text-2xl font-bold text-bubbleDark mb-6 text-center sticky top-0 bg-bubble-bg-gradient py-2 z-10">信徒心声</h3>
+                    <div id="tribute-messages" class="space-y-5">
+                        <div class="tribute-message" style="--bubble-color: #9c27b0;">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-bubbleDark flex items-center"><i class="fas fa-user-circle mr-2"></i>南中老gay——朱gay</h4>
+                                <span class="text-xs text-gray-400">2025-03-31</span>
+                            </div>
+                            <p class="text-gray-700 text-sm">泡泡大王的征服能力是我毕生追求的目标，永远怀念被大王征服的日子！大王千秋万代！</p>
+                        </div>
+                        <div class="tribute-message" style="--bubble-color: #3f51b5;">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-indigo-700 flex items-center"><i class="fas fa-user-circle mr-2"></i>王石页</h4>
+                                <span class="text-xs text-gray-400">2025-05-20</span>
+                            </div>
+                            <p class="text-gray-700 text-sm">每次压力大的时候就会想起泡泡大王的袭击，顿时感觉轻松了许多，大王精神永存！希望大王保佑我考试顺利！</p>
+                        </div>
+                         <div class="tribute-message" style="--bubble-color: #009688;">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-teal-700 flex items-center"><i class="fas fa-user-circle mr-2"></i>匿名小粉丝</h4>
+                                <span class="text-xs text-gray-400">2025-06-01</span>
+                            </div>
+                            <p class="text-gray-700 text-sm">虽然不认识大王，但感觉好厉害的样子！祝大王永远开心！</p>
+                        </div>
+                        </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="quotes" class="mb-20 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-bubbleDark mb-3">大王语录</h2>
+                <p class="text-lg text-gray-600">蕴含宇宙真理的箴言</p>
+                <div class="w-24 h-1 bg-gradient-to-r from-bubble to-accent mx-auto mt-4 rounded-full"></div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="shrine-card bg-white p-6 rounded-xl shadow-lg border border-gray-100 h-full flex flex-col">
+                    <div class="flex items-start mb-4">
+                        <div class="bg-bubble text-white rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center mr-4 shadow">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-bubbleDark mt-1">抗压哲学</h3>
+                    </div>
+                    <p class="text-gray-700 italic mb-4 flex-grow">"当你觉得压力山大的时候，只需要轻轻‘死’一次，世界就会为你让路。记住，是精神上的‘死’，不是物理上的。"</p>
+                    <div class="text-right text-bubble font-medium text-sm mt-2">—— 泡泡大王</div>
+                </div>
+                <div class="shrine-card bg-white p-6 rounded-xl shadow-lg border border-gray-100 h-full flex flex-col">
+                    <div class="flex items-start mb-4">
+                        <div class="bg-bubble text-white rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center mr-4 shadow">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-bubbleDark mt-1">老gay相处之道</h3>
+                    </div>
+                    <p class="text-gray-700 italic mb-4 flex-grow">"征服老gay的关键不在于力量，而在于你能否比他们更gay。当你成为gay中之王，他们自然会臣服于你的石榴裤...啊不，是你的魅力之下。"</p>
+                    <div class="text-right text-bubble font-medium text-sm mt-2">—— 泡泡大王</div>
+                </div>
+                <div class="shrine-card bg-white p-6 rounded-xl shadow-lg border border-gray-100 h-full flex flex-col">
+                    <div class="flex items-start mb-4">
+                        <div class="bg-bubble text-white rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center mr-4 shadow">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-bubbleDark mt-1">人生智慧</h3>
+                    </div>
+                    <p class="text-gray-700 italic mb-4 flex-grow">"生活就像一个巨大的泡泡，看似脆弱，却能折射出五彩斑斓的世界。关键在于，你是否敢于吹出自己的色彩，哪怕它随时可能破灭。"</p>
+                    <div class="text-right text-bubble font-medium text-sm mt-2">—— 泡泡大王</div>
+                </div>
+                <div class="shrine-card bg-white p-6 rounded-xl shadow-lg border border-gray-100 h-full flex flex-col">
+                    <div class="flex items-start mb-4">
+                        <div class="bg-bubble text-white rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center mr-4 shadow">
+                            <i class="fas fa-user-astronaut"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-bubbleDark mt-1">永恒秘诀</h3>
+                    </div>
+                    <p class="text-gray-700 italic mb-4 flex-grow">"我之所以能活到9999年（理论上），是因为我从不让任何事情真正‘杀死’我的心情。包括死亡本身，那不过是换个地方继续吹泡泡罢了。"</p>
+                    <div class="text-right text-bubble font-medium text-sm mt-2">—— 泡泡大王</div>
+                </div>
+            </div>
+        </section>
+
+         <section id="game" class="mb-20 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-bubbleDark mb-3">泡泡大作战</h2>
+                <p class="text-lg text-gray-600">体验戳破烦恼的快感</p>
+                <div class="w-24 h-1 bg-gradient-to-r from-bubble to-accent mx-auto mt-4 rounded-full"></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+                <div class="flex justify-between items-center mb-4 px-4">
+                    <div class="text-lg font-semibold">得分: <span id="score" class="text-bubble font-bold">0</span></div>
+                    <div class="text-lg font-semibold">时间: <span id="timer" class="text-red-500 font-bold">30</span>s</div>
+                    <button id="startGameBtn" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full font-medium transition duration-300 shadow hover:shadow-md">
+                        <i class="fas fa-play mr-1"></i> 开始游戏
+                    </button>
+                </div>
+                <canvas id="bubble-game-canvas"></canvas>
+                <p class="text-center text-sm text-gray-500 mt-4">点击泡泡来戳破它们！</p>
+            </div>
+        </section>
+
+        <section id="music" class="mb-20 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-bubbleDark mb-3">灵魂乐章</h2>
+                <p class="text-lg text-gray-600">感受泡泡大王的音乐品味</p>
+                <div class="w-24 h-1 bg-gradient-to-r from-bubble to-accent mx-auto mt-4 rounded-full"></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+                <div class="flex flex-col md:flex-row items-center md:items-start gap-8">
+                    <div class="flex-shrink-0 w-40 h-40 md:w-48 md:h-48 bg-gradient-to-br from-bubbleLight to-bubble rounded-lg overflow-hidden shadow-md">
+                        <img id="albumArt" src="https://s21.ax1x.com/2025/04/04/pE6dyM6.jpg" alt="泡泡大王专辑封面 " class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-1 w-full">
+                        <h3 class="text-2xl font-bold text-bubbleDark mb-1" id="nowPlayingTitle">音乐已就绪</h3>
+                        <p class="text-gray-500 mb-4 text-sm" id="nowPlayingArtist">点击下方列表选择歌曲</p>
+                        <div class="relative mb-2 pt-1">
+                             <input type="range" id="seekBar" value="0" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-bubble" style="background: linear-gradient(to right, #9c27b0 0%, #9c27b0 0%, #e0e0e0 0%, #e0e0e0 100%);">
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-gray-500 mb-4">
+                            <span id="currentTime">0:00</span>
+                            <span id="duration">0:00</span>
+                        </div>
+                        <div class="flex justify-center items-center space-x-6">
+                            <button onclick="prevSong()" class="text-bubble hover:text-bubbleDark transition duration-300 p-2 rounded-full hover:bg-bubbleLight/30">
+                                <i class="fas fa-step-backward text-xl"></i>
+                            </button>
+                            <button onclick="togglePlay()" class="bg-bubble hover:bg-bubbleDark text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transform hover:scale-110 transition duration-300">
+                                <i id="playIcon" class="fas fa-play text-xl"></i>
+                            </button>
+                            <button onclick="nextSong()" class="text-bubble hover:text-bubbleDark transition duration-300 p-2 rounded-full hover:bg-bubbleLight/30">
+                                <i class="fas fa-step-forward text-xl"></i>
+                            </button>
+                            <div class="flex items-center space-x-2">
+                                 <i id="volumeIcon" class="fas fa-volume-up text-bubble"></i>
+                                 <input type="range" id="volumeBar" min="0" max="1" step="0.01" value="1" class="w-20 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-bubble">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-10">
+                    <h4 class="font-bold text-bubbleDark mb-4 text-lg border-b pb-2 border-bubbleLight">泡泡精选歌单</h4>
+                    <div id="playlist" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                        </div>
+                </div>
+            </div>
+        </section>
+
+
+        <section class="bg-gradient-to-r from-bubble to-bubbleDark text-white rounded-xl shadow-lg p-10 text-center mb-20 transform hover:scale-[1.02] transition duration-500">
+            <h2 class="text-3xl font-bold mb-4 drop-shadow-md">想深入了解泡泡大王的传奇？</h2>
+            <p class="text-xl mb-6 opacity-90">立即加入泡泡大王官方粉丝后援会QQ群！</p>
+            <a href="https://qm.qq.com/q/SgWPPeBFeu" target="_blank" class="bg-white text-bubbleDark hover:bg-gray-100 px-8 py-3 rounded-full font-bold text-lg inline-block transition duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                <i class="fab fa-qq mr-2"></i> 点击光速入群
+            </a>
+        </section>
+
+    </main>
+
+    <footer class="bg-bubbleDark text-white py-10 mt-auto">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center text-center md:text-left">
+                <div class="mb-6 md:mb-0">
+                    <h2 class="text-2xl font-bold mb-2">泡泡大王传奇纪念馆</h2>
+                    <p class="text-sm opacity-80">南中传奇，精神永存 (2010 - 9999)</p>
+                </div>
+                <div class="flex space-x-6 mb-6 md:mb-0">
+                    <a href="#" class="text-white hover:text-bubbleLight text-2xl transition duration-300 transform hover:scale-125" aria-label="Weixin"><i class="fab fa-weixin"></i></a>
+                    <a href="https://qm.qq.com/q/SgWPPeBFeu" target="_blank" class="text-white hover:text-bubbleLight text-2xl transition duration-300 transform hover:scale-125" aria-label="QQ"><i class="fab fa-qq"></i></a>
+                    <a href="#" class="text-white hover:text-bubbleLight text-2xl transition duration-300 transform hover:scale-125" aria-label="Weibo"><i class="fab fa-weibo"></i></a>
+                </div>
+            </div>
+            <div class="border-t border-bubble mt-8 pt-8 text-center">
+                <p class="text-xs opacity-70">&copy; 2025 泡泡大王粉丝团荣誉出品 - 泡泡精神永垂不朽！</p>
+                 <p class="text-xs opacity-50 mt-1">特别鸣谢: <a href="https://mp.weixin.qq.com/s/CrRHHxHlQv-iJY027m707Q" target="_blank" class="hover:text-bubbleLight underline">我自己</a> 提供灵感</p>
+                 <p class="text-xs opacity-50 mt-1">本站由 <a href="https://gemini.google.com" target="_blank" class="hover:text-bubbleLight underline">Gemini</a> 强力驱动</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="fixed bottom-5 left-5 z-50">
+         <a href="https://qm.qq.com/q/SgWPPeBFeu" target="_blank" class="block w-14 h-14 bg-gradient-to-br from-bubble to-bubbleDark rounded-full shadow-lg flex items-center justify-center text-white text-2xl animate-pulse hover:animate-none transform hover:scale-110 transition duration-300" aria-label="联系泡泡QQ">
+            <i class="fab fa-qq"></i>
+        </a>
+    </div>
+
+    <div class="fixed bottom-5 right-5 z-50">
+        <button onclick="bubbleMiracle()" class="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-black font-bold py-3 px-5 rounded-full shadow-lg animate-bounce hover:animate-none transform hover:scale-105 transition duration-300 flex items-center text-sm">
+            <i class="fas fa-bolt mr-2"></i> 紧急召唤泡泡
+        </button>
+    </div>
+
+    <script>
+        // --- Constants and State Variables ---
+        const API_URL = 'https://api.cenguigui.cn/api/tomato.html'; // API endpoint
+        const TRIBUTE_LS_KEY = 'bubbleKingTributes'; // LocalStorage key for tributes
+        const playlist = [ // Music playlist
+            { title: 'The way I still love you', artist: '未知音乐人', url: 'http://ws.stream.qqmusic.qq.com/C400000u2Mv04awaJZ.m4a?guid=476609528&vkey=ED55C6FCA15E209633FBBE97D334C984F6AE56AA5F24D60FC4310890FAE2D25A4BF73B5D1F4AACB7DF1F3CF6147C96966FCF7EA1D951AE0D__v21e2a1872&uin=&fromtag=120032&src=C400000w4Dh00z1b1t.m4a', art: 'https://placehold.co/200x200/e1bee7/7b1fa2?text=Song+1' },
+            { title: 'BGM (纯音乐)', artist: '未知音乐人', url: 'http://ws.stream.qqmusic.qq.com/C400004IaJ6x2cGgmk.m4a?guid=638819936&vkey=B1080D202DE17EDACA197292CA627D4A9F899D2E4FDC5DECF638E3F7088EEB03FA2BE294E2645185BEAF711D6B9E0FB77AC3CBFDDD02C80F__v21e2a171d&uin=&fromtag=120032', art: 'https://placehold.co/200x200/c5cae9/3949ab?text=Song+2' },
+            { title: '可能存在的第三首歌', artist: '神秘艺术家', url: '#', art: 'https://placehold.co/200x200/b3e5fc/0288d1?text=Song+3' } // Placeholder
+        ];
+        let currentSongIndex = 0;
+        let isPlaying = false;
+        const audio = new Audio();
+
+        // Bubble Game Variables
+        const canvas = document.getElementById('bubble-game-canvas');
+        const ctx = canvas.getContext('2d');
+        let score = 0;
+        let timer = 30;
+        let gameInterval;
+        let bubbles = [];
+        let gameActive = false;
+        const BUBBLE_RADIUS = 25;
+        const BUBBLE_SPAWN_RATE = 700; // ms
+
+        // --- DOM Element References ---
+        const tomatoSentenceEl = document.getElementById('tomato-english-sentence');
+        const tributeForm = document.getElementById('tribute-form');
+        const tributeMessagesContainer = document.getElementById('tribute-messages');
+        const nameInput = document.getElementById('name');
+        const messageInput = document.getElementById('message');
+        const tributeSuccessMsg = document.getElementById('tribute-success');
+        const candleContainer = document.getElementById('candle1-container');
+        const incenseContainer = document.getElementById('incense1-container');
+        const playIcon = document.getElementById('playIcon');
+        const nowPlayingTitle = document.getElementById('nowPlayingTitle');
+        const nowPlayingArtist = document.getElementById('nowPlayingArtist');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationEl = document.getElementById('duration');
+        const seekBar = document.getElementById('seekBar');
+        const volumeBar = document.getElementById('volumeBar');
+        const volumeIcon = document.getElementById('volumeIcon');
+        const playlistContainer = document.getElementById('playlist');
+        const albumArt = document.getElementById('albumArt');
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('timer');
+        const startGameBtn = document.getElementById('startGameBtn');
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchTomatoEnglish();
+            loadTributes();
+            initializeMusicPlayer();
+            setupBubbleGame();
+            createBackgroundBubbles(); // Add background bubbles on load
+            addClickSparkleEffect(); // Add click effect
+            // Ensure default candle and incense are visible
+            if (!candleContainer.innerHTML.trim()) {
+                 candleContainer.innerHTML = '<div class="candle"></div>';
+            }
+            if (!incenseContainer.innerHTML.trim()) {
+                 incenseContainer.innerHTML = '<div class="incense"></div>';
+            }
+        });
+
+        // --- API Fetching ---
+        /**
+         * Fetches the daily English sentence from the API.
+         * Uses a CORS proxy if direct fetch fails.
+         */
+        async function fetchTomatoEnglish() {
+            const proxyUrl = 'https://cors-anywhere.herokuapp.com/'; // Simple CORS proxy
+            const targetUrl = API_URL;
+
+            try {
+                let response = await fetch(targetUrl);
+                // If direct fetch is blocked by CORS, try via proxy
+                if (!response.ok && response.status === 0) { // Status 0 often indicates CORS block
+                     console.warn('Direct fetch failed, possibly due to CORS. Trying proxy...');
+                     response = await fetch(proxyUrl + targetUrl);
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const htmlText = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, 'text/html');
+                // Find the sentence - adjust selector if the API structure changes
+                const sentenceElement = doc.querySelector('body > center > h2'); // Assuming this is the structure
+
+                if (sentenceElement) {
+                    tomatoSentenceEl.textContent = sentenceElement.textContent.trim();
+                    // Remove loading spinner
+                    const spinner = tomatoSentenceEl.querySelector('.fa-spinner');
+                    if(spinner) spinner.remove();
+                } else {
+                    tomatoSentenceEl.textContent = '无法解析今日智慧，请稍后再试。';
+                    console.error("Could not find the sentence element in the fetched HTML.");
+                }
+
+            } catch (error) {
+                console.error('获取番茄英语失败:', error);
+                tomatoSentenceEl.textContent = '加载智慧失败，请检查网络或稍后再试。';
+                 // Remove loading spinner on error too
+                 const spinner = tomatoSentenceEl.querySelector('.fa-spinner');
+                 if(spinner) spinner.remove();
+            }
+        }
+
+
+        // --- Tribute System ---
+        /**
+         * Loads tributes from Local Storage.
+         */
+        function loadTributes() {
+            const tributes = JSON.parse(localStorage.getItem(TRIBUTE_LS_KEY) || '[]');
+            // Clear existing samples if loading from storage
+            // tributeMessagesContainer.innerHTML = ''; // Keep samples initially
+            tributes.forEach(tribute => addTributeToDOM(tribute, false)); // Add loaded tributes without animation
+        }
+
+        /**
+         * Saves tributes to Local Storage.
+         * @param {Array} tributes - The array of tribute objects.
+         */
+        function saveTributes(tributes) {
+            localStorage.setItem(TRIBUTE_LS_KEY, JSON.stringify(tributes));
+        }
+
+        /**
+         * Handles the submission of the tribute form.
+         * @param {Event} e - The form submission event.
+         */
+        tributeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = nameInput.value.trim();
+            const message = messageInput.value.trim();
+
+            if (!name || !message) return; // Basic validation
+
+            const newTribute = {
+                name: name,
+                message: message,
+                date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+                id: Date.now() // Simple unique ID
+            };
+
+            addTributeToDOM(newTribute, true); // Add with animation
+
+            // Update local storage
+            const existingTributes = JSON.parse(localStorage.getItem(TRIBUTE_LS_KEY) || '[]');
+            existingTributes.unshift(newTribute); // Add to the beginning
+            saveTributes(existingTributes);
+
+            // Reset form and show success message
+            tributeForm.reset();
+            tributeSuccessMsg.classList.remove('hidden');
+            setTimeout(() => {
+                tributeSuccessMsg.classList.add('hidden');
+            }, 3000); // Hide after 3 seconds
+        });
+
+        /**
+         * Adds a tribute message to the DOM.
+         * @param {object} tribute - The tribute object {name, message, date, id}.
+         * @param {boolean} animate - Whether to add an animation effect.
+         */
+        function addTributeToDOM(tribute, animate) {
+            const newTributeEl = document.createElement('div');
+            // Assign a random color for the border/tail
+            const colors = ['#9c27b0', '#3f51b5', '#009688', '#ff9800', '#e53935'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            newTributeEl.className = 'tribute-message opacity-0 transform -translate-x-4'; // Initial state for animation
+            newTributeEl.style.setProperty('--bubble-color', randomColor); // Set CSS variable for color
+
+            newTributeEl.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold flex items-center" style="color: ${randomColor};"><i class="fas fa-user-circle mr-2"></i>${escapeHTML(tribute.name)}</h4>
+                    <span class="text-xs text-gray-400">${tribute.date}</span>
+                </div>
+                <p class="text-gray-700 text-sm">${escapeHTML(tribute.message)}</p>
+            `;
+            // Prepend to the container
+            tributeMessagesContainer.prepend(newTributeEl);
+
+            // Trigger animation if requested
+            if (animate) {
+                // Use setTimeout to allow the element to be added to the DOM first
+                setTimeout(() => {
+                    newTributeEl.classList.remove('opacity-0', '-translate-x-4');
+                    newTributeEl.classList.add('opacity-100', 'translate-x-0');
+                    newTributeEl.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                }, 10); // Small delay
+            } else {
+                 // If no animation, just make it visible immediately
+                 newTributeEl.classList.remove('opacity-0', '-translate-x-4');
+                 newTributeEl.classList.add('opacity-100', 'translate-x-0');
+            }
+        }
+
+        /**
+         * Escapes HTML special characters to prevent XSS.
+         * @param {string} str - The string to escape.
+         * @returns {string} - The escaped string.
+         */
+         function escapeHTML(str) {
+             const div = document.createElement('div');
+             div.appendChild(document.createTextNode(str));
+             return div.innerHTML;
+         }
+
+
+        // --- Ritual Animations ---
+        /**
+         * Simulates lighting a candle with animation.
+         * @param {string} idPrefix - The prefix for the candle container ID.
+         */
+        function lightCandle(idPrefix) {
+            const container = document.getElementById(`${idPrefix}-container`);
+            if (!container) return;
+            // Add candle with flame animation class
+            container.innerHTML = `
+                <div class="candle">
+                    </div>
+            `; // The ::before pseudo-element handles the flame via CSS
+             // Optionally, add a temporary class for a lighting effect
+             const candleEl = container.querySelector('.candle');
+             if(candleEl) {
+                 candleEl.classList.add('animate-pulse'); // Example effect
+                 setTimeout(() => candleEl.classList.remove('animate-pulse'), 1500);
+             }
+
+            // Note: The flame animation is continuous via CSS keyframes.
+            // No need for a timeout to remove it unless you want it to extinguish.
+        }
+
+        /**
+         * Simulates lighting incense with animation.
+         * @param {string} idPrefix - The prefix for the incense container ID.
+         */
+        function lightIncense(idPrefix) {
+            const container = document.getElementById(`${idPrefix}-container`);
+             if (!container) return;
+            // Add incense with smoke animation class
+            container.innerHTML = `
+                <div class="incense">
+                     </div>
+            `; // The ::after pseudo-element handles the smoke via CSS
+             // Optionally, add a temporary class for a lighting effect
+             const incenseEl = container.querySelector('.incense');
+             if(incenseEl) {
+                 incenseEl.classList.add('animate-pulse'); // Example effect
+                 setTimeout(() => incenseEl.classList.remove('animate-pulse'), 1500);
+             }
+            // Note: The smoke animation is continuous via CSS keyframes.
+        }
+
+        // --- Music Player Logic ---
+        /**
+         * Initializes the music player: loads playlist, sets up listeners.
+         */
+        function initializeMusicPlayer() {
+            renderPlaylist();
+            loadSong(currentSongIndex); // Load the first song initially
+            setupAudioListeners();
+            setupPlayerControls();
+        }
+
+        /**
+         * Renders the playlist items in the DOM.
+         */
+        function renderPlaylist() {
+            playlistContainer.innerHTML = ''; // Clear existing items
+            playlist.forEach((song, index) => {
+                const item = document.createElement('div');
+                item.className = `flex items-center p-3 hover:bg-bubbleLight/50 rounded-lg cursor-pointer transition duration-200 ${index === currentSongIndex ? 'bg-bubbleLight/50 font-semibold' : ''}`;
+                item.innerHTML = `
+                    <img src="${song.art || 'https://placehold.co/40x40/eeeeee/999999?text=?'}" alt="Album art for ${song.title}" class="w-10 h-10 rounded mr-3 object-cover">
+                    <div class="flex-1 overflow-hidden whitespace-nowrap overflow-ellipsis">
+                        <p class="text-sm">${song.title}</p>
+                        <p class="text-xs text-gray-500">${song.artist}</p>
+                    </div>
+                    <i class="fas fa-music text-bubble ml-auto ${index === currentSongIndex && isPlaying ? 'animate-pulse' : 'opacity-0'}"></i>
+                `;
+                item.addEventListener('click', () => {
+                    currentSongIndex = index;
+                    loadSong(currentSongIndex);
+                    playAudio();
+                });
+                playlistContainer.appendChild(item);
+            });
+        }
+
+        /**
+         * Loads a song by its index in the playlist.
+         * @param {number} index - The index of the song to load.
+         */
+        function loadSong(index) {
+            const song = playlist[index];
+            if (!song || song.url === '#') { // Handle invalid or placeholder songs
+                 console.warn(`Song at index ${index} is invalid or a placeholder.`);
+                 // Optionally skip to the next valid song or stop playback
+                 return;
+             }
+            audio.src = song.url;
+            nowPlayingTitle.textContent = song.title;
+            nowPlayingArtist.textContent = song.artist;
+            albumArt.src = song.art || 'https://placehold.co/200x200/eeeeee/999999?text=?'; // Update album art
+            updatePlaylistUI(); // Highlight the current song
+            // Reset seek bar and time display for new song
+            seekBar.value = 0;
+            updateSeekBarBackground(0);
+            currentTimeEl.textContent = '0:00';
+            durationEl.textContent = '0:00'; // Will be updated on loadedmetadata
+        }
+
+        /**
+         * Sets up event listeners for the audio element.
+         */
+        function setupAudioListeners() {
+            audio.addEventListener('loadedmetadata', () => {
+                durationEl.textContent = formatTime(audio.duration);
+                seekBar.max = audio.duration;
+            });
+            audio.addEventListener('timeupdate', () => {
+                currentTimeEl.textContent = formatTime(audio.currentTime);
+                seekBar.value = audio.currentTime;
+                updateSeekBarBackground(audio.currentTime / audio.duration);
+            });
+            audio.addEventListener('ended', () => {
+                nextSong(); // Automatically play next song
+            });
+             audio.addEventListener('error', (e) => {
+                 console.error("Audio Error:", e);
+                 nowPlayingTitle.textContent = "播放错误";
+                 nowPlayingArtist.textContent = "无法加载此歌曲";
+                 playIcon.className = 'fas fa-exclamation-triangle text-xl text-red-500'; // Show error icon
+                 isPlaying = false;
+                 updatePlaylistUI();
+             });
+        }
+
+        /**
+         * Sets up event listeners for player control buttons and sliders.
+         */
+        function setupPlayerControls() {
+            seekBar.addEventListener('input', () => {
+                audio.currentTime = seekBar.value;
+                updateSeekBarBackground(seekBar.value / audio.duration);
+            });
+            volumeBar.addEventListener('input', () => {
+                audio.volume = volumeBar.value;
+                updateVolumeIcon(volumeBar.value);
+            });
+        }
+
+        /**
+         * Toggles between playing and pausing the audio.
+         */
+        function togglePlay() {
+             if (audio.src && audio.src !== window.location.href) { // Check if a valid source is set
+                if (isPlaying) {
+                    pauseAudio();
+                } else {
+                    playAudio();
+                }
+            } else if (playlist.length > 0) {
+                 // If no song is loaded, load the first one and play
+                 loadSong(currentSongIndex);
+                 playAudio();
+            }
+        }
+
+        /**
+         * Plays the audio.
+         */
+        function playAudio() {
+            if (!audio.src || audio.src === window.location.href) return; // Don't play if no valid src
+            audio.play().then(() => {
+                 isPlaying = true;
+                 playIcon.className = 'fas fa-pause text-xl';
+                 updatePlaylistUI();
+             }).catch(error => {
+                 console.error("Playback failed:", error);
+                 // Handle playback failure (e.g., show an error message)
+                 nowPlayingTitle.textContent = "播放失败";
+                 playIcon.className = 'fas fa-exclamation-triangle text-xl text-red-500';
+                 isPlaying = false;
+                 updatePlaylistUI();
+             });
+        }
+
+        /**
+         * Pauses the audio.
+         */
+        function pauseAudio() {
+            audio.pause();
+            isPlaying = false;
+            playIcon.className = 'fas fa-play text-xl';
+            updatePlaylistUI();
+        }
+
+        /**
+         * Plays the next song in the playlist.
+         */
+        function nextSong() {
+            currentSongIndex = (currentSongIndex + 1) % playlist.length;
+            loadSong(currentSongIndex);
+            playAudio();
+        }
+
+        /**
+         * Plays the previous song in the playlist.
+         */
+        function prevSong() {
+            currentSongIndex = (currentSongIndex - 1 + playlist.length) % playlist.length;
+            loadSong(currentSongIndex);
+            playAudio();
+        }
+
+        /**
+         * Updates the visual state of the playlist items.
+         */
+        function updatePlaylistUI() {
+            const items = playlistContainer.querySelectorAll('div.flex');
+            items.forEach((item, index) => {
+                const musicIcon = item.querySelector('.fa-music');
+                if (index === currentSongIndex) {
+                    item.classList.add('bg-bubbleLight/50', 'font-semibold');
+                    if (isPlaying && musicIcon) {
+                        musicIcon.classList.remove('opacity-0');
+                        musicIcon.classList.add('animate-pulse');
+                    } else if (musicIcon) {
+                        musicIcon.classList.add('opacity-0');
+                        musicIcon.classList.remove('animate-pulse');
+                    }
+                } else {
+                    item.classList.remove('bg-bubbleLight/50', 'font-semibold');
+                    if (musicIcon) {
+                         musicIcon.classList.add('opacity-0');
+                         musicIcon.classList.remove('animate-pulse');
+                    }
+                }
+            });
+        }
+
+        /**
+         * Updates the volume icon based on the volume level.
+         * @param {number} volume - The current volume level (0 to 1).
+         */
+        function updateVolumeIcon(volume) {
+            if (volume === 0) {
+                volumeIcon.className = 'fas fa-volume-mute text-bubble';
+            } else if (volume < 0.5) {
+                volumeIcon.className = 'fas fa-volume-down text-bubble';
+            } else {
+                volumeIcon.className = 'fas fa-volume-up text-bubble';
+            }
+        }
+
+        /**
+         * Updates the background gradient of the seek bar.
+         * @param {number} progress - The playback progress (0 to 1).
+         */
+        function updateSeekBarBackground(progress) {
+             const percentage = progress * 100;
+             seekBar.style.background = `linear-gradient(to right, #9c27b0 0%, #9c27b0 ${percentage}%, #e0e0e0 ${percentage}%, #e0e0e0 100%)`;
+         }
+
+        /**
+         * Formats time in seconds to MM:SS format.
+         * @param {number} seconds - The time in seconds.
+         * @returns {string} - The formatted time string.
+         */
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+
+        // --- Bubble Pop Game Logic ---
+        /**
+         * Sets up the bubble game canvas and event listeners.
+         */
+        function setupBubbleGame() {
+            // Set canvas dimensions based on container
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            startGameBtn.addEventListener('click', startGame);
+            canvas.addEventListener('click', handleCanvasClick);
+        }
+
+        /**
+         * Resizes the canvas to fit its container.
+         */
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            // Height is fixed in CSS, but we can set it here too if needed
+            canvas.height = 400; // Match CSS height
+             // Redraw bubbles if game is active after resize
+             if (gameActive) {
+                 drawBubbles();
+             }
+        }
+
+        /**
+         * Starts the bubble pop game.
+         */
+        function startGame() {
+            if (gameActive) return; // Prevent starting multiple times
+            gameActive = true;
+            score = 0;
+            timer = 30;
+            bubbles = [];
+            scoreEl.textContent = score;
+            timerEl.textContent = timer;
+            startGameBtn.disabled = true;
+            startGameBtn.textContent = '游戏中...';
+            startGameBtn.classList.replace('bg-green-500', 'bg-gray-400');
+            startGameBtn.classList.replace('hover:bg-green-600', 'cursor-not-allowed');
+
+            // Start game loop
+            gameInterval = setInterval(gameLoop, 1000 / 60); // 60 FPS target
+            // Start timer countdown
+            const timerInterval = setInterval(() => {
+                timer--;
+                timerEl.textContent = timer;
+                if (timer <= 0) {
+                    clearInterval(timerInterval);
+                    endGame();
+                }
+            }, 1000);
+
+            // Start spawning bubbles
+            const spawnInterval = setInterval(() => {
+                 if (!gameActive) {
+                     clearInterval(spawnInterval);
+                     return;
+                 }
+                 spawnBubble();
+             }, BUBBLE_SPAWN_RATE);
+
+             // Store interval IDs to clear them later
+             canvas.dataset.timerInterval = timerInterval;
+             canvas.dataset.spawnInterval = spawnInterval;
+        }
+
+        /**
+         * Ends the bubble pop game.
+         */
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameInterval);
+             // Clear intervals stored in dataset
+             clearInterval(parseInt(canvas.dataset.timerInterval));
+             clearInterval(parseInt(canvas.dataset.spawnInterval));
+
+            startGameBtn.disabled = false;
+            startGameBtn.textContent = '重新开始';
+            startGameBtn.classList.replace('bg-gray-400', 'bg-green-500');
+            startGameBtn.classList.replace('cursor-not-allowed', 'hover:bg-green-600');
+
+            // Display final score message
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = 'bold 30px "Noto Sans SC", sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.fillText(`游戏结束! 得分: ${score}`, canvas.width / 2, canvas.height / 2);
+            ctx.font = '16px "Noto Sans SC", sans-serif';
+            ctx.fillText('点击“重新开始”再玩一次', canvas.width / 2, canvas.height / 2 + 40);
+        }
+
+        /**
+         * The main game loop: updates bubble positions and redraws.
+         */
+        function gameLoop() {
+            if (!gameActive) return;
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Update and draw bubbles
+            updateBubbles();
+            drawBubbles();
+        }
+
+        /**
+         * Spawns a new bubble at a random position.
+         */
+        function spawnBubble() {
+             const x = Math.random() * (canvas.width - BUBBLE_RADIUS * 2) + BUBBLE_RADIUS;
+             const y = canvas.height + BUBBLE_RADIUS; // Start below screen
+             const speed = Math.random() * 1.5 + 1; // Random speed
+             const colors = ['#9c27b0', '#e1bee7', '#7b1fa2', '#ffeb3b', '#fbc02d', '#4caf50', '#2196f3'];
+             const color = colors[Math.floor(Math.random() * colors.length)];
+             bubbles.push({ x, y, radius: BUBBLE_RADIUS, speed, color, popped: false, popProgress: 0 });
+         }
+
+        /**
+         * Updates the position of each bubble. Removes bubbles that go off-screen.
+         */
+        function updateBubbles() {
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                const bubble = bubbles[i];
+                 if (bubble.popped) {
+                     bubble.popProgress += 0.1; // Control pop animation speed
+                     if (bubble.popProgress >= 1) {
+                         bubbles.splice(i, 1); // Remove fully popped bubble
+                     }
+                 } else {
+                     bubble.y -= bubble.speed;
+                     // Remove bubbles that float off the top
+                     if (bubble.y < -bubble.radius) {
+                         bubbles.splice(i, 1);
+                     }
+                 }
+            }
+        }
+
+        /**
+         * Draws all bubbles onto the canvas.
+         */
+        function drawBubbles() {
+             bubbles.forEach(bubble => {
+                 if (bubble.popped) {
+                     // Draw popping animation (e.g., shrinking circle or particles)
+                     const popRadius = bubble.radius * (1 - bubble.popProgress);
+                     ctx.beginPath();
+                     ctx.arc(bubble.x, bubble.y, popRadius, 0, Math.PI * 2);
+                     ctx.fillStyle = bubble.color + '80'; // Semi-transparent
+                     ctx.fill();
+                     // Optional: add particles effect
+                 } else {
+                     // Draw normal bubble
+                     ctx.beginPath();
+                     ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+                     // Add gradient for 3D effect
+                     const gradient = ctx.createRadialGradient(bubble.x - bubble.radius * 0.3, bubble.y - bubble.radius * 0.3, bubble.radius * 0.1, bubble.x, bubble.y, bubble.radius);
+                     gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)'); // Highlight
+                     gradient.addColorStop(0.8, bubble.color);
+                     gradient.addColorStop(1, bubble.color);
+                     ctx.fillStyle = gradient;
+                     ctx.fill();
+                     // Optional: add a slight border
+                     // ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                     // ctx.stroke();
+                 }
+            });
+        }
+
+        /**
+         * Handles clicks on the game canvas to pop bubbles.
+         * @param {MouseEvent} event - The click event.
+         */
+        function handleCanvasClick(event) {
+            if (!gameActive) return;
+            const rect = canvas.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+
+            // Check if click hit any bubble (iterate backwards for safe removal)
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                const bubble = bubbles[i];
+                if (bubble.popped) continue; // Skip already popped bubbles
+
+                const distance = Math.sqrt(Math.pow(clickX - bubble.x, 2) + Math.pow(clickY - bubble.y, 2));
+                if (distance <= bubble.radius) {
+                    bubble.popped = true; // Mark as popped for animation
+                    score++;
+                    scoreEl.textContent = score;
+                    // Play pop sound (optional)
+                    // popSound.play();
+                    break; // Only pop one bubble per click
+                }
+            }
+        }
+
+
+        // --- Visual Effects ---
+        /**
+         * Creates floating bubbles in the background of the entire page.
+         */
+        function createBackgroundBubbles() {
+            const bubbleContainer = document.createElement('div');
+            bubbleContainer.style.position = 'fixed';
+            bubbleContainer.style.top = '0';
+            bubbleContainer.style.left = '0';
+            bubbleContainer.style.width = '100%';
+            bubbleContainer.style.height = '100%';
+            bubbleContainer.style.zIndex = '-1'; // Behind content
+            bubbleContainer.style.overflow = 'hidden';
+            bubbleContainer.style.pointerEvents = 'none'; // Allow clicks through
+            document.body.prepend(bubbleContainer); // Add to the start of body
+
+            const colors = ['rgba(156, 39, 176, 0.1)', 'rgba(225, 190, 231, 0.1)', 'rgba(255, 235, 59, 0.1)'];
+            const numBubbles = 20; // Number of background bubbles
+
+            for (let i = 0; i < numBubbles; i++) {
+                const bubble = document.createElement('div');
+                const size = Math.random() * 60 + 20; // Size between 20px and 80px
+                const posX = Math.random() * 100; // Horizontal position (%)
+                const delay = Math.random() * 15; // Start delay (0-15s)
+                const duration = Math.random() * 20 + 15; // Duration (15-35s)
+                const color = colors[Math.floor(Math.random() * colors.length)];
+
+                bubble.style.position = 'absolute';
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${posX}%`;
+                bubble.style.bottom = `-${size}px`; // Start below the screen
+                bubble.style.backgroundColor = color;
+                bubble.style.borderRadius = '50%';
+                bubble.style.animation = `float-up ${duration}s linear ${delay}s infinite`;
+                bubbleContainer.appendChild(bubble);
+            }
+        }
+
+        /**
+         * Adds a sparkling effect on mouse click anywhere on the page.
+         */
+        function addClickSparkleEffect() {
+            document.addEventListener('click', function(e) {
+                // Avoid triggering sparkles on interactive elements like buttons/inputs
+                if (e.target.closest('button, input, textarea, a, canvas')) {
+                    return;
+                }
+
+                const colors = ['#9c27b0', '#e1bee7', '#7b1fa2', '#ffeb3b', '#ff9800'];
+                const sparkleCount = 7; // Number of sparkles per click
+
+                for (let i = 0; i < sparkleCount; i++) {
+                    const sparkle = document.createElement('div');
+                    const size = Math.random() * 8 + 4; // Sparkle size
+                    const angle = Math.random() * Math.PI * 2; // Random direction
+                    const distance = Math.random() * 40 + 20; // How far it travels
+                    const duration = Math.random() * 0.5 + 0.3; // Animation duration
+
+                    sparkle.style.position = 'absolute';
+                    sparkle.style.left = `${e.clientX}px`;
+                    sparkle.style.top = `${e.clientY}px`;
+                    sparkle.style.width = `${size}px`;
+                    sparkle.style.height = `${size}px`;
+                    sparkle.style.borderRadius = '50%';
+                    sparkle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    sparkle.style.opacity = '1';
+                    sparkle.style.transform = 'scale(0)'; // Start small
+                    sparkle.style.zIndex = '9999';
+                    sparkle.style.pointerEvents = 'none'; // Prevent interaction
+                    sparkle.style.transition = `all ${duration}s cubic-bezier(0.1, 0.7, 1.0, 0.1)`; // Custom easing
+
+                    document.body.appendChild(sparkle);
+
+                    // Animate sparkle outwards and fade
+                    setTimeout(() => {
+                        const endX = Math.cos(angle) * distance;
+                        const endY = Math.sin(angle) * distance;
+                        sparkle.style.transform = `translate(${endX}px, ${endY}px) scale(1)`;
+                        sparkle.style.opacity = '0';
+                    }, 10); // Small delay to trigger transition
+
+                    // Remove sparkle after animation
+                    setTimeout(() => {
+                        sparkle.remove();
+                    }, duration * 1000 + 50);
+                }
+            });
+        }
+
+
+        // --- Emergency Summon ---
+        /**
+         * Creates a visual effect and plays a sound for the summon button.
+         */
+        function bubbleMiracle() {
+            // 1. Fullscreen bubble burst effect
+            const burstContainer = document.createElement('div');
+            burstContainer.style.position = 'fixed';
+            burstContainer.style.inset = '0'; // Cover entire screen
+            burstContainer.style.zIndex = '9998'; // Below potential alert
+            burstContainer.style.pointerEvents = 'none';
+            burstContainer.style.overflow = 'hidden';
+            document.body.appendChild(burstContainer);
+
+            for (let i = 0; i < 50; i++) {
+                let bubble = document.createElement('div');
+                const size = Math.random() * 80 + 30; // Larger bubbles
+                const color = `hsl(${Math.random() * 360}, 70%, 70%)`; // Random HSL colors
+
+                bubble.style.position = 'absolute';
+                bubble.style.borderRadius = '50%';
+                bubble.style.backgroundColor = color;
+                bubble.style.opacity = '0.8';
+                bubble.style.width = `${size}px`;
+                bubble.style.height = bubble.style.width;
+                // Start from center and burst outwards
+                bubble.style.left = `calc(50% - ${size/2}px)`;
+                bubble.style.top = `calc(50% - ${size/2}px)`;
+                bubble.style.transform = 'scale(0)';
+                // Animate outwards
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.random() * (Math.max(window.innerWidth, window.innerHeight) / 1.5);
+                const endX = Math.cos(angle) * distance;
+                const endY = Math.sin(angle) * distance;
+                const duration = Math.random() * 1 + 0.5; // 0.5s to 1.5s
+
+                bubble.style.transition = `all ${duration}s cubic-bezier(0.2, 0.8, 0.2, 1)`; // Ease out quad
+
+                burstContainer.appendChild(bubble);
+
+                setTimeout(() => {
+                     bubble.style.transform = `translate(${endX}px, ${endY}px) scale(1)`;
+                     bubble.style.opacity = '0';
+                 }, 10); // Start animation
+
+                 // Remove bubble after animation
+                 setTimeout(() => bubble.remove(), duration * 1000 + 50);
+            }
+             // Remove container after animations finish
+             setTimeout(() => burstContainer.remove(), 1600);
+
+
+            // 2. Play sound effect (Use a placeholder if external URL is blocked/unreliable)
+            try {
+                // Note: Browser autoplay policies might block this without user interaction.
+                 const laughAudio = new Audio('https://www.myinstants.com/media/sounds/tengen-uzui-laugh.mp3');
+                 laughAudio.volume = 0.5; // Adjust volume
+                 laughAudio.play().catch(e => console.warn("Audio playback failed, likely due to browser policy:", e));
+            } catch (e) {
+                 console.error("Failed to create or play audio:", e);
+            }
+
+
+            // 3. Display custom message box instead of alert()
+            showCustomAlert("凡人！你竟敢召唤本大王！<br><br>赏你一句真理：<br>「考试不及格怎么办？<br>把试卷折成纸飞机<br>它就是全班最高分！」");
+        }
+
+        /**
+         * Shows a custom, non-blocking alert message.
+         * @param {string} message - The message to display (HTML allowed).
+         */
+        function showCustomAlert(message) {
+             // Remove existing alert if any
+             const existingAlert = document.getElementById('custom-alert-box');
+             if (existingAlert) existingAlert.remove();
+
+             const alertBox = document.createElement('div');
+             alertBox.id = 'custom-alert-box';
+             alertBox.style.position = 'fixed';
+             alertBox.style.top = '20px';
+             alertBox.style.left = '50%';
+             alertBox.style.transform = 'translateX(-50%)';
+             alertBox.style.backgroundColor = 'rgba(123, 31, 162, 0.9)'; // bubbleDark with opacity
+             alertBox.style.color = 'white';
+             alertBox.style.padding = '20px 30px';
+             alertBox.style.borderRadius = '12px';
+             alertBox.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.3)';
+             alertBox.style.zIndex = '10000';
+             alertBox.style.textAlign = 'center';
+             alertBox.style.maxWidth = '90%';
+             alertBox.style.lineHeight = '1.6';
+             alertBox.style.fontSize = '16px';
+             alertBox.style.opacity = '0'; // Start hidden for fade-in
+             alertBox.style.transition = 'opacity 0.5s ease';
+
+             alertBox.innerHTML = `
+                <p>${message}</p>
+                <button id="custom-alert-close" style="background: #e1bee7; color: #7b1fa2; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 15px; font-weight: bold;">朕知道了</button>
+             `;
+
+             document.body.appendChild(alertBox);
+
+             // Fade in
+             setTimeout(() => { alertBox.style.opacity = '1'; }, 10);
+
+             // Close button functionality
+             document.getElementById('custom-alert-close').onclick = () => {
+                 alertBox.style.opacity = '0';
+                 setTimeout(() => alertBox.remove(), 500); // Remove after fade out
+             };
+
+             // Optional: Auto-close after a delay
+             // setTimeout(() => {
+             //     if (document.getElementById('custom-alert-box')) { // Check if still exists
+             //         alertBox.style.opacity = '0';
+             //         setTimeout(() => alertBox.remove(), 500);
+             //     }
+             // }, 8000); // Auto-close after 8 seconds
+         }
+
+
+        // --- Utilities ---
+        // Add custom scrollbar styles (optional)
+        const scrollbarStyle = document.createElement('style');
+        scrollbarStyle.innerHTML = `
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 8px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 10px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #c5cae9; /* Light purple */
+                border-radius: 10px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #9c27b0; /* Bubble purple */
+            }
+        `;
+        document.head.appendChild(scrollbarStyle);
+
+    </script>
+    </body>
+</html>
+
