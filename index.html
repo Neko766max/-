@@ -485,24 +485,85 @@
             document.getElementById('mute-btn').innerText = isMuted ? '🔇' : '🔊';
         }
 
-        // --- 预加载 ---
-        let loadedCount = 0;
-        function initLoader() {
-            TEACHERS.forEach((t, i) => {
-                const img = new Image(); img.crossOrigin = "anonymous"; img.src = t.src;
-                img.onload = () => { ASSETS[i] = img; checkLoad(); };
-                img.onerror = () => { ASSETS[i] = null; checkLoad(); };
-            });
+      // ==========================================
+    // 替换开始：预加载系统（支持直接读取本地图片）
+    // ==========================================
+    
+    // --- 资源配置 ---
+    // 注意：为了让本地图片生效，请确保你的文件名是从 1000102660.png 到 1000102670.png
+    // 也就是直接放在和 index.html 同一级目录下
+    
+    let loadedCount = 0;
+
+    // 动态生成本地文件名：1000102660 + 索引.png
+    const getLocalPath = (index) => `./${1000102660 + index}.png`;
+
+    function initLoader() {
+        TEACHERS.forEach((t, i) => {
+            // 逻辑：先试网路图 -> 失败试本地图 -> 失败画个圆
+            loadWithFallback(i, t.src, getLocalPath(i));
+        });
+    }
+
+    function loadWithFallback(index, remoteUrl, localUrl) {
+        // 1. 尝试加载网络图 (如果不需要网络图，可以将此处直接改为失败)
+        const img = new Image();
+        img.crossOrigin = "anonymous"; 
+        
+        img.onload = () => { ASSETS[index] = img; checkLoad(); };
+        
+        img.onerror = () => {
+            // console.log(`网络图挂了，尝试本地: ${localUrl}`);
+            // 2. 网络失败，尝试加载同目录下的本地图片
+            const localImg = new Image();
+            localImg.src = localUrl;
+            
+            localImg.onload = () => { ASSETS[index] = localImg; checkLoad(); };
+            
+            localImg.onerror = () => {
+                // 3. 本地也没有，生成替代圆球
+                ASSETS[index] = createPlaceholder(TEACHERS[index].radius, index);
+                checkLoad();
+            };
+        };
+
+        // 如果你想强制只用本地图片，把下面这就话注释掉，直接调用 img.onerror()
+        img.src = remoteUrl; 
+        // img.onerror(); // <--- 如果想强制用本地，取消这行的注释，并注释上一行
+    }
+
+    // 生成临时的纯色圆球，防止游戏白屏
+    function createPlaceholder(radius, index) {
+        const cvs = document.createElement('canvas');
+        cvs.width = radius * 2; cvs.height = radius * 2;
+        const ctx = cvs.getContext('2d');
+        const colors = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c', '#3498db', '#9b59b6', '#34495e', '#7f8c8d', '#2c3e50'];
+        ctx.beginPath(); ctx.arc(radius, radius, radius, 0, Math.PI * 2);
+        ctx.fillStyle = colors[index % colors.length]; ctx.fill();
+        ctx.fillStyle = 'white'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(index, radius, radius);
+        const newImg = new Image(); newImg.src = cvs.toDataURL();
+        return newImg;
+    }
+
+    function checkLoad() {
+        loadedCount++;
+        const bar = document.getElementById('loading-bar');
+        if(bar) bar.innerText = Math.floor(loadedCount / TEACHERS.length * 100) + '%';
+        if(loadedCount >= TEACHERS.length) {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'flex';
         }
-        function checkLoad() {
-            loadedCount++;
-            document.getElementById('loading-bar').innerText = Math.floor(loadedCount/TEACHERS.length*100) + '%';
-            if(loadedCount >= TEACHERS.length) {
-                document.getElementById('loading-screen').style.display = 'none';
-                document.getElementById('menu-screen').style.display = 'flex';
-            }
-        }
-        initLoader();
+    }
+    
+    // 启动加载
+    initLoader();
+    
+    // ==========================================
+    // 替换结束
+    // ==========================================
+
+
 
         // --- 功能函数 ---
         function openUpdateLink() {
