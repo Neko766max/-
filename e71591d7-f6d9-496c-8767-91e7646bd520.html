@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>南沙河中学: 廉洁校园行动</title>
+    <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --font-stack: "Helvetica Neue", "Microsoft YaHei", sans-serif;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; padding: 0; 
+            overflow: hidden; 
+            background: #222; 
+            font-family: var(--font-stack);
+            touch-action: none; 
+            user-select: none; 
+            -webkit-user-select: none;
+            height: 100dvh; width: 100vw;
+        }
+
+        /* 动画背景 */
+        .animated-bg {
+            position: absolute; width: 100%; height: 100%; top:0; left:0; z-index: -1;
+            background: linear-gradient(-45deg, #1a2a6c, #b21f1f, #fdbb2d);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG { 0% {background-position: 0% 50%;} 50% {background-position: 100% 50%;} 100% {background-position: 0% 50%;} }
+
+        /* 通用全屏容器 */
+        .full-screen { 
+            position: absolute; top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        /* 菜单样式 */
+        #menu-screen { z-index: 200; overflow-y: auto; padding-bottom: 50px; }
+        .menu-header {
+            text-align: center; margin-bottom: 15px; padding: 15px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 90%; max-width: 400px;
+            border: 4px solid var(--dark);
+            position: relative;
+        }
+        .menu-title { 
+            font-size: 1.8rem; color: var(--dark); font-weight: 900; margin: 0;
+            letter-spacing: 1px;
+        }
+        .menu-subtitle { font-size: 0.8rem; color: #666; margin-top: 5px; font-weight: bold; }
+        
+        .btn-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            width: 90%; max-width: 400px; padding-bottom: 40px;
+        }
+
+        .mode-btn {
+            background: rgba(255,255,255,0.9); color: var(--dark);
+            border: none; padding: 12px; height: 100px;
+            border-radius: 16px;
+            box-shadow: 0 4px 0 #bdc3c7;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .mode-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #bdc3c7; }
+        .mode-icon { font-size: 2.2rem; margin-bottom: 5px; }
+        .mode-text { font-size: 0.95rem; font-weight: 800; }
+        .mode-desc { font-size: 0.65rem; color: #777; margin-top: 2px; }
+
+        /* 特殊按钮 */
+        .btn-notice {
+            position: absolute; top: 10px; right: 10px;
+            background: var(--warning); color: var(--dark);
+            border: 2px solid var(--dark); border-radius: 50%;
+            width: 36px; height: 36px; font-size: 1.2rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        
+        .btn-update { 
+            grid-column: span 2; 
+            background: linear-gradient(to right, #11998e, #38ef7d); 
+            color: white; height: 60px; flex-direction: row; gap: 15px;
+            box-shadow: 0 4px 0 #0e7a72;
+        }
+
+        /* 游戏容器背景 */
+        #game-a-container { background-color: #fdfbf7; background-image: radial-gradient(#d0d0d0 1px, transparent 1px); background-size: 20px 20px; }
+        #game-b-container { background: linear-gradient(180deg, #87CEEB 0%, #87CEEB 100px, #8B4513 100px, #5D2906 100%); }
+        #game-c-container { background: linear-gradient(to bottom, #1e3c72 0%, #2a5298 100%); } /* 深邃背景代表反腐深水区 */
+        #game-d-container { background: #c0392b; background-image: repeating-linear-gradient(90deg, transparent, transparent 48%, rgba(255,255,255,0.3) 49%, rgba(255,255,255,0.3) 51%, transparent 52%); }
+        #game-e-container { background: #34495e; }
+        #game-f-container { background: #27ae60; background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 20px 20px;}
+
+        canvas { 
+            box-shadow: 0 0 20px rgba(0,0,0,0.3); 
+            border-radius: 8px; 
+            background: rgba(255,255,255,0.1); 
+            touch-action: none;
+        }
+
+        /* UI层通用 */
+        .ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .top-bar {
+            position: absolute; top: 0; left: 0; width: 100%; height: 60px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 15px; padding-top: max(10px, env(safe-area-inset-top));
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+            pointer-events: none;
+        }
+        
+        .back-btn { 
+            background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); 
+            padding: 8px 16px; border-radius: 20px; cursor: pointer; 
+            pointer-events: auto; font-size: 0.9rem; font-weight: bold; backdrop-filter: blur(4px);
+        }
+        .score-badge { 
+            background: rgba(0,0,0,0.6); color: #f1c40f; 
+            padding: 5px 15px; border-radius: 20px; 
+            font-size: 1.2rem; font-weight: 900; 
+            border: 2px solid #f1c40f;
+            text-shadow: 0 2px 0 #000;
+        }
+
+        /* 弹窗 */
+        .modal { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 300; justify-content: center; align-items: center; pointer-events: auto; backdrop-filter: blur(5px); }
+        .modal-box { 
+            background: white; padding: 25px; border-radius: 20px; text-align: center; width: 85%; max-width: 320px; 
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            border: 4px solid var(--dark);
+            box-shadow: 0 10px 0 rgba(0,0,0,0.2);
+            max-height: 80vh; overflow-y: auto;
+        }
+        @keyframes popIn { from{transform:scale(0.8); opacity: 0;} to{transform:scale(1); opacity: 1;} }
+        
+        .action-btn {
+            width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 10px;
+            font-size: 1rem; font-weight: 900; cursor: pointer; color: white;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        .action-btn:active { transform: translateY(4px); box-shadow: none; }
+        .btn-restart { background: var(--success); }
+        .btn-menu { background: var(--dark); }
+
+        /* 公告内容 */
+        .notice-content { text-align: left; font-size: 0.9rem; line-height: 1.6; color: #333; margin: 10px 0; }
+        .notice-content h3 { color: var(--primary); margin: 0 0 10px 0; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        .notice-content li { margin-bottom: 5px; }
+
+        /* 音频控制 */
+        .sound-toggle {
+            position: absolute; bottom: 20px; right: 20px;
+            width: 40px; height: 40px;
+            background: rgba(255,255,255,0.8); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.2rem; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 300;
+        }
+
+        /* Game F: 翻牌 */
+        .card-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+            width: 90%; max-width: 360px; aspect-ratio: 4/5;
+            margin-top: 20px;
+        }
+        .card {
+            background: #fff; border-radius: 8px; cursor: pointer;
+            position: relative; transform-style: preserve-3d; transition: transform 0.4s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        .card.flipped { transform: rotateY(180deg); }
+        .card.matched { visibility: hidden; pointer-events: none; }
+        .card-face {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden;
+            display: flex; justify-content: center; align-items: center;
+            border-radius: 8px; font-size: 2rem;
+        }
+        .card-front { background: #34495e; color: white; border: 2px solid #2c3e50; } /* 背面 */
+        .card-back { background: #fff; transform: rotateY(180deg); border: 2px solid var(--primary); }
+        .card-back img { width: 80%; height: 80%; object-fit: contain; border-radius: 50%; }
+
+        /* Game E 特有样式 */
+        .building-grid {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+            width: 90%; max-width: 400px;
+        }
+        .window-cell {
+            aspect-ratio: 1; background: #555; border: 4px solid #7f8c8d; border-radius: 5px;
+            position: relative; overflow: hidden; cursor: pointer; box-shadow: inset 0 0 20px #000;
+        }
+        .window-cell.lit { background: #f1c40f; box-shadow: 0 0 15px #f1c40f; }
+        .window-content {
+            width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-end;
+            pointer-events: none;
+        }
+        .window-img { width: 80%; height: 80%; object-fit: contain; transform: translateY(100%); transition: transform 0.2s; }
+        .window-img.show { transform: translateY(10px); }
+
+        /* Game D 旋转提示 */
+        #rotate-tip {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--dark); color: white; z-index: 500;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 资源加载 -->
+    <div id="loading-screen" class="full-screen" style="display: flex; background: #fff; z-index: 400;">
+        <div style="font-size: 4rem; margin-bottom: 20px;">🏫</div>
+        <h2 style="color: var(--primary);">正在打扫校园...</h2>
+        <div id="loading-bar" style="color:#666; margin-top:10px;">0%</div>
+    </div>
+
+    <div class="sound-toggle" onclick="toggleMute()" id="mute-btn">🔊</div>
+
+    <!-- 主菜单 -->
+    <div id="menu-screen" class="full-screen">
+        <div class="animated-bg"></div>
+        <div class="menu-header">
+            <button class="btn-notice" onclick="openNotice()">📢</button>
+            <div class="menu-title">南沙河中学<br>大冒险</div>
+            <div class="menu-subtitle">V4.0 by泡泡</div>
+        </div>
+        
+        <div class="btn-grid">
+            <button class="mode-btn" onclick="startGame('A')">
+                <span class="mode-icon">🍉</span>
+                <span class="mode-text">合成牢校长</span>
+                <span class="mode-desc">物理合成</span>
+            </button>
+            <button class="mode-btn" onclick="startGame('B')">
+                <span class="mode-icon">🎣</span>
+                <span class="mode-text">三角贸易</span>
+                <span class="mode-desc">假如我是英国佬</span>
+            </button>
+            <button class="mode-btn" onclick="startGame('C')" style="background: #e3f2fd; border: 2px solid #2196f3;">
+                <span class="mode-icon">💰</span>
+                <span class="mode-text">自动拾取忘关</span>
+                <span class="mode-desc">谁在我办公室放的红包！</span>
+            </button>
+            <button class="mode-btn" onclick="startGame('E')">
+                <span class="mode-icon">🔦</span>
+                <span class="mode-text">模拟校长</span>
+                <span class="mode-desc">巡视课堂，看哪个老师偷懒？打地鼠！</span>
+            </button>
+            <button class="mode-btn" onclick="startGame('F')" style="background: #e8f8f5;">
+                <span class="mode-icon">🧩</span>
+                <span class="mode-text">慧眼识人</span>
+                <span class="mode-desc">记忆翻牌</span>
+            </button>
+            <button class="mode-btn" onclick="startGame('D')" style="background: #fff4e6;">
+                <span class="mode-icon">🥊</span>
+                <span class="mode-text">高王PK</span>
+                <span class="mode-desc">双厨狂喜</span>
+            </button>
+
+            <!-- 更新按钮 -->
+            <button class="mode-btn btn-update" onclick="openUpdateLink()">
+                <div style="font-size: 2rem;">⬇️</div>
+                <div style="display:flex; flex-direction:column; align-items:flex-start;">
+                    <div style="font-size:1.1rem; font-weight:bold;">更新游戏</div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- 公告弹窗 -->
+    <div id="notice-modal" class="modal">
+        <div class="modal-box" style="text-align: left;">
+            <div style="text-align: center; font-size: 1.5rem; margin-bottom: 10px;">📜 校务公告</div>
+            <div class="notice-content">
+                <h3>v4.0 版本更新</h3>
+                <ul>
+                <li>🥊 <b>模式[双人PK]改名为[高王PK] ：</b> 虽然我知道新名也不咋地，但就这样吧，总不能叫[狗咬狗]吧？另外此模式需关闭手机竖屏锁定功能。</li>
+                    <li>🎉 <b>新校长：</b> talltall正式履新！大家鞭炮招待！（真诚）</li>
+                    <li>🦅 <b>新模式[自动拾取忘关]：</b> 控制开了自动拾取的高校长躲避空中的“红包”和“钱袋”，你真的能赢吗？</li>
+                    <li>🧩 <b>新模式[慧眼识人]：</b> 考验记忆力，完成教职工的人事任命。</li>
+                    
+                    <li>🐛 <b>修复：</b> 优化了部分机型的适配问题，削减了安装包大小，更换了网盘！</li>
+                    <li>📧<b>碎碎念：</b>包体不到2mb，靠的是纯前端的极致压缩，本来图片要占些储存，但我都传图床上去了，于是整个包最大的只剩下图标了（这是一年前的泯然众人的老游戏的图标，废物利用属于是）</li>  比较重要的一点，本游戏由于参考了我校领导的形象进行合理的有限度的二创，所以上不了台面（后期考虑重绘）因此不要大规模传播（这游戏真的会被传播？？？）</li>
+                </ul>
+                <p style="font-size:0.8rem; color:#999; text-align:center;">祝各位同学游戏愉悦！</p>
+            </div>
+            <button class="action-btn btn-menu" onclick="closeNotice()">关闭公告</button>
+        </div>
+    </div>
+
+    <!-- 游戏 A：合成 -->
+    <div id="game-a-container" class="full-screen">
+        <div class="top-bar">
+            <button class="back-btn" onclick="backToMenu()">↩ 退出</button>
+            <div class="score-badge"><span id="score-a">0</span></div>
+            <div style="width:40px; height:40px; background:rgba(255,255,255,0.8); border-radius:50%; display:flex; justify-content:center; align-items:center; border:2px solid #ccc;">
+                <img id="next-preview-img" style="width:30px; height:30px; border-radius:50%;">
+            </div>
+        </div>
+        <div id="modal-a" class="modal">
+            <div class="modal-box">
+                <h2 style="color: var(--danger);">容器已满</h2>
+                <div style="font-size: 3rem; font-weight:900;"><span id="final-score-a">0</span></div>
+                <button class="action-btn btn-restart" onclick="startGame('A')">重试</button>
+                <button class="action-btn btn-menu" onclick="backToMenu()">菜单</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏 B：矿工 -->
+    <div id="game-b-container" class="full-screen">
+        <div class="top-bar">
+            <button class="back-btn" onclick="backToMenu()">↩ 退出</button>
+            <div class="score-badge">¥ <span id="score-b">0</span></div>
+            <div style="color:white; font-weight:bold;">⏳ <span id="timer-b">60</span>s</div>
+        </div>
+        <canvas id="canvas-b"></canvas>
+        <div id="modal-b" class="modal">
+            <div class="modal-box">
+                <h2 style="color: var(--primary);">清算结束</h2>
+                <div style="font-size: 3rem; font-weight:900;">¥<span id="final-score-b">0</span></div>
+                <button class="action-btn btn-restart" onclick="startGame('B')">重试</button>
+                <button class="action-btn btn-menu" onclick="backToMenu()">菜单</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏 C：拒腐防变 (修改版) -->
+    <div id="game-c-container" class="full-screen">
+        <div class="top-bar">
+            <button class="back-btn" onclick="backToMenu()">↩ 退出</button>
+            <div class="score-badge">廉洁指数: <span id="score-c">0</span></div>
+        </div>
+        <div class="ui-overlay" id="overlay-c" style="display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.5);">
+            <div style="color:white; font-size:1.5rem; font-weight:bold; text-align:center;">
+                <div>点击屏幕飞行</div>
+                <div style="font-size:1rem; margin-top:10px; color:#f1c40f;">⚠️ 躲避红包和钱袋！</div>
+            </div>
+        </div>
+        <canvas id="canvas-c"></canvas>
+        <div id="modal-c" class="modal">
+            <div class="modal-box">
+                <h2 style="color: var(--danger);">你被腐蚀了!</h2>
+                <p>坚持秒数</p>
+                <div style="font-size: 3rem; font-weight:900;"><span id="final-score-c">0</span></div>
+                <p style="color:red; font-size:0.9rem;">警钟长鸣，拒绝诱惑</p>
+                <button class="action-btn btn-restart" onclick="startGame('C')">悔过重来</button>
+                <button class="action-btn btn-menu" onclick="backToMenu()">菜单</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏 D：PVP -->
+    <div id="game-d-container" class="full-screen">
+        <div id="rotate-tip"><h1>请旋转手机</h1></div>
+        <button class="back-btn" style="position:absolute; left:50%; transform:translateX(-50%); top:10px; z-index:60;" onclick="backToMenu()">↩ 退出</button>
+        <div style="position:absolute; width:100%; height:100%; top:0; left:0; display:flex;">
+            <div id="p1-btn" style="flex:1; background:rgba(231,76,60,0.1); border-right:1px solid rgba(255,255,255,0.2);"></div>
+            <div id="p2-btn" style="flex:1; background:rgba(52,152,219,0.1);"></div>
+        </div>
+        <canvas id="canvas-d"></canvas>
+        <div id="modal-d" class="modal">
+            <div class="modal-box">
+                <h2 id="winner-d" style="color: var(--warning);">胜者产生!</h2>
+                <button class="action-btn btn-restart" onclick="startGame('D')">再战</button>
+                <button class="action-btn btn-menu" onclick="backToMenu()">菜单</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏 E：巡视 -->
+    <div id="game-e-container" class="full-screen">
+        <div class="top-bar">
+            <button class="back-btn" onclick="backToMenu()">↩ 退出</button>
+            <div class="score-badge">纪律: <span id="score-e">0</span></div>
+            <div style="color:white; font-weight:bold;">⏳ <span id="timer-e">30</span>s</div>
+        </div>
+        <div class="building-grid" id="grid-e"></div>
+        <div id="modal-e" class="modal">
+            <div class="modal-box">
+                <h2 style="color: var(--dark);">巡视结束</h2>
+                <div style="font-size: 3rem; font-weight:900;"><span id="final-score-e">0</span></div>
+                <button class="action-btn btn-restart" onclick="startGame('E')">继续</button>
+                <button class="action-btn btn-menu" onclick="backToMenu()">菜单</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏 F：慧眼识人 (新) -->
+    <div id="game-f-container" class="full-screen">
+        <div class="top-bar">
+            <button class="back-btn" onclick="backToMenu()">↩ 退出</button>
+            <div style="color:white; font-weight:bold;">⏳ <span id="timer-f">45</span>s</div>
+        </div>
+        <div style="color:white; font-size:1.2rem; margin-bottom:10px; font-weight:bold; text-shadow:0 1px 2px black;">找到相同的教职工</div>
+        <div class="card-grid" id="grid-f"></div>
+        <div id="modal-f" class="modal">
+            <div class="modal-box">
+                <h2 id="title-f" style="color: var(--success);">任命完成!</h2>
+                <p>剩余时间</p>
+                <div style="font-size: 3rem; font-weight:900;"><span id="final-score-f">0</span>s</div>
+                <button class="action-btn btn-restart" onclick="startGame('F')">再试一次</button>
+                <button class="action-btn btn-menu" onclick="backToMenu()">菜单</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 核心配置 ---
+        // 9: 高涛校长 (特定URL), 10: 牢校长 (旧)
+        const TEACHERS = [
+            { src: 'https://free-img.400040.xyz/4/2025/11/22/6921c83a06e78.png', radius: 25, score: 10 },
+            { src: 'https://free-img.400040.xyz/4/2025/11/22/6921c83a96379.png', radius: 32, score: 20 },
+            { src: 'https://free-img.400040.xyz/4/2025/11/22/6921c83b022cb.png', radius: 40, score: 40 },
+            { src: 'https://free-img.400040.xyz/4/2025/11/22/6921c83b683ce.png', radius: 48, score: 60 },
+            { src: 'https://free-img.400040.xyz/4/2025/11/22/6921c83c4be50.png', radius: 55, score: 80 },
+            { src: 'https://free-img.400040.xyz/4/2025/11/22/6921c83e508d2.png', radius: 62, score: 100 },
+            { src: 'https://free-img.400040.xyz/4/2025/11/22/6921c83e57f91.png', radius: 70, score: 150 },
+            { src: 'https://free-img.400040.xyz/4/2025/11/22/6921c84dc14d4.png', radius: 78, score: 350 },
+            { src: 'https://free-img.400040.xyz/4/2025/11/22/6921c84795983.png', radius: 88, score: 400 },
+            { src: 'https://free-img.400040.xyz/4/2025/11/22/6921c83e65183.png', radius: 98, score: 2500, type: 'new_principal' }, // Index 9: 高涛
+            { src: 'https://free-img.400040.xyz/4/2025/11/22/6921c83e72667.png', radius: 110, score: 3000 } // Index 10: 牢校长
+        ];
+
+        const ASSETS = {};
+        let isMuted = false;
+        
+        // --- 音频系统 ---
+        const AudioSys = {
+            ctx: null,
+            init: () => {
+                if(!AudioSys.ctx) AudioSys.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if(AudioSys.ctx.state === 'suspended') AudioSys.ctx.resume();
+            },
+            sfx: (type) => {
+                if(isMuted || !AudioSys.ctx) return;
+                const t = AudioSys.ctx.currentTime;
+                const osc = AudioSys.ctx.createOscillator();
+                const gain = AudioSys.ctx.createGain();
+                osc.connect(gain); gain.connect(AudioSys.ctx.destination);
+
+                if(type === 'pop') { 
+                    osc.frequency.setValueAtTime(400, t); osc.frequency.exponentialRampToValueAtTime(800, t+0.1);
+                    gain.gain.setValueAtTime(0.1, t); gain.gain.linearRampToValueAtTime(0, t+0.1);
+                    osc.start(t); osc.stop(t+0.1);
+                } else if(type === 'win') {
+                    osc.type='triangle'; osc.frequency.setValueAtTime(500, t); osc.frequency.setValueAtTime(800, t+0.1);
+                    gain.gain.setValueAtTime(0.1, t); gain.gain.linearRampToValueAtTime(0, t+0.3);
+                    osc.start(t); osc.stop(t+0.3);
+                } else if(type === 'bad') {
+                    osc.type='sawtooth'; osc.frequency.setValueAtTime(150, t); osc.frequency.linearRampToValueAtTime(100, t+0.3);
+                    gain.gain.setValueAtTime(0.2, t); gain.gain.linearRampToValueAtTime(0, t+0.3);
+                    osc.start(t); osc.stop(t+0.3);
+                } else if(type === 'flip') {
+                    osc.frequency.setValueAtTime(600, t); gain.gain.setValueAtTime(0.05, t); gain.gain.linearRampToValueAtTime(0, t+0.1);
+                    osc.start(t); osc.stop(t+0.1);
+                }
+            }
+        };
+
+        function toggleMute() {
+            AudioSys.init(); isMuted = !isMuted;
+            document.getElementById('mute-btn').innerText = isMuted ? '🔇' : '🔊';
+        }
+
+        // --- 预加载 ---
+        let loadedCount = 0;
+        function initLoader() {
+            TEACHERS.forEach((t, i) => {
+                const img = new Image(); img.crossOrigin = "anonymous"; img.src = t.src;
+                img.onload = () => { ASSETS[i] = img; checkLoad(); };
+                img.onerror = () => { ASSETS[i] = null; checkLoad(); };
+            });
+        }
+        function checkLoad() {
+            loadedCount++;
+            document.getElementById('loading-bar').innerText = Math.floor(loadedCount/TEACHERS.length*100) + '%';
+            if(loadedCount >= TEACHERS.length) {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('menu-screen').style.display = 'flex';
+            }
+        }
+        initLoader();
+
+        // --- 功能函数 ---
+        function openUpdateLink() {
+            const i = document.createElement('input'); i.value = ''; document.body.appendChild(i);
+            i.select(); document.execCommand('copy'); document.body.removeChild(i);
+            window.open('https://www.123912.com/s/iHgZVv-LDO0H', '_blank');
+        }
+
+        function openNotice() { document.getElementById('notice-modal').style.display = 'flex'; AudioSys.sfx('pop'); }
+        function closeNotice() { document.getElementById('notice-modal').style.display = 'none'; }
+
+        // --- 游戏状态管理 ---
+        let activeGame = null;
+        let gameData = {};
+
+        function startGame(mode) {
+            AudioSys.init();
+            document.getElementById('menu-screen').style.display = 'none';
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            ['a','b','c','d','e','f'].forEach(id => document.getElementById(`game-${id}-container`).style.display = 'none');
+            document.getElementById(`game-${mode.toLowerCase()}-container`).style.display = 'flex';
+            
+            cleanupAll();
+            activeGame = mode;
+            if(mode==='A') initGameA();
+            if(mode==='B') initGameB();
+            if(mode==='C') initGameC();
+            if(mode==='D') initGameD();
+            if(mode==='E') initGameE();
+            if(mode==='F') initGameF();
+        }
+
+        function backToMenu() {
+            cleanupAll(); activeGame = null;
+            document.querySelectorAll('.full-screen').forEach(el => el.style.display = 'none');
+            document.getElementById('menu-screen').style.display = 'flex';
+        }
+
+        function cleanupAll() {
+            if(gameData.A) { Matter.Runner.stop(gameData.A.runner); Matter.Engine.clear(gameData.A.engine); gameData.A.canvas.remove(); gameData.A = null; }
+            if(gameData.B) { cancelAnimationFrame(gameData.B); gameData.B = null; }
+            if(gameData.C) { cancelAnimationFrame(gameData.C); gameData.C = null; }
+            if(gameData.D) { cancelAnimationFrame(gameData.D); gameData.D = null; window.removeEventListener('resize', checkOrientation); }
+            if(gameData.E) { clearInterval(gameData.E.timer); clearTimeout(gameData.E.spawnTimer); gameData.E = null; }
+            if(gameData.F) { clearInterval(gameData.F.timer); gameData.F = null; }
+        }
+
+        // ================= GAME A: 合成 =================
+        function initGameA() {
+            const Engine = Matter.Engine, Runner = Matter.Runner, Bodies = Matter.Bodies, Composite = Matter.Composite, Events = Matter.Events, Body = Matter.Body;
+            const container = document.getElementById('game-a-container');
+            const canvas = document.createElement('canvas');
+            canvas.width = container.clientWidth; canvas.height = container.clientHeight;
+            container.insertBefore(canvas, container.firstChild);
+            
+            const engine = Engine.create({ gravity: { y: 1.5 } });
+            const runner = Runner.create();
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width, height = canvas.height;
+
+            Composite.add(engine.world, [
+                Bodies.rectangle(width/2, height+50, width, 100, { isStatic: true }),
+                Bodies.rectangle(-10, height/2, 20, height*2, { isStatic: true }),
+                Bodies.rectangle(width+10, height/2, 20, height*2, { isStatic: true })
+            ]);
+
+            let score = 0, curBody = null, canDrop = true, nextLvl = 0;
+            document.getElementById('score-a').innerText = '0';
+
+            function updatePreview() { nextLvl = Math.floor(Math.random()*4); document.getElementById('next-preview-img').src = ASSETS[nextLvl].src; }
+            updatePreview();
+
+            function spawn() {
+                curBody = Bodies.circle(width/2, 80, TEACHERS[nextLvl].radius, { isStatic: true, label: 'fruit', isSensor: true, customLvl: nextLvl });
+                Composite.add(engine.world, curBody); canDrop = true; updatePreview();
+            }
+
+            const move = (x) => { if(curBody && canDrop) Body.setPosition(curBody, { x: Math.max(curBody.circleRadius, Math.min(width-curBody.circleRadius, x)), y: 80 }); };
+            container.onpointermove = e => { e.preventDefault(); move(e.clientX); };
+            container.onpointerdown = e => { move(e.clientX); };
+            container.onpointerup = () => { if(curBody && canDrop) { canDrop=false; Body.setStatic(curBody, false); curBody.isSensor=false; AudioSys.sfx('pop'); curBody=null; setTimeout(spawn, 800); }};
+
+            Events.on(engine, 'collisionStart', e => {
+                e.pairs.forEach(p => {
+                    const a = p.bodyA, b = p.bodyB;
+                    if(a.label==='fruit' && b.label==='fruit' && a.customLvl===b.customLvl && !a.toRemove) {
+                        if(a.customLvl < TEACHERS.length-1) {
+                            a.toRemove = b.toRemove = true;
+                            Composite.remove(engine.world, [a,b]);
+                            Composite.add(engine.world, Bodies.circle((a.position.x+b.position.x)/2, (a.position.y+b.position.y)/2, TEACHERS[a.customLvl+1].radius, { label: 'fruit', customLvl: a.customLvl+1, restitution: 0.2 }));
+                            score += TEACHERS[a.customLvl].score; document.getElementById('score-a').innerText = score; AudioSys.sfx('pop');
+                        }
+                    }
+                });
+            });
+
+            Events.on(runner, 'afterUpdate', () => {
+                ctx.clearRect(0,0,width,height);
+                ctx.beginPath(); ctx.moveTo(0,150); ctx.lineTo(width,150); ctx.strokeStyle='rgba(231,76,60,0.5)'; ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]);
+                Composite.allBodies(engine.world).forEach(b => {
+                    if(b.label === 'fruit') {
+                        const img = ASSETS[b.customLvl];
+                        ctx.save(); ctx.translate(b.position.x, b.position.y); ctx.rotate(b.angle);
+                        ctx.beginPath(); ctx.arc(0,0,b.circleRadius,0,6.28); ctx.clip();
+                        if(img) ctx.drawImage(img, -b.circleRadius, -b.circleRadius, b.circleRadius*2, b.circleRadius*2);
+                        ctx.restore();
+                        // Check Over
+                        if(!b.isSensor && b.position.y < 150 && b.speed < 0.2 && !curBody && !canDrop) {
+                             Runner.stop(runner); document.getElementById('final-score-a').innerText=score; document.getElementById('modal-a').style.display='flex';
+                        }
+                    }
+                });
+            });
+            spawn(); Runner.run(runner, engine); gameData.A = { engine, runner, canvas };
+        }
+
+        // ================= GAME B: 矿工 =================
+        function initGameB() {
+            const cvs = document.getElementById('canvas-b'), ctx = cvs.getContext('2d');
+            const W = cvs.width = cvs.parentElement.clientWidth, H = cvs.height = cvs.parentElement.clientHeight;
+            let score=0, time=60, lastT=Date.now(), hook={x:W/2,y:50,ang:1.57,len:30,st:0,sp:0,dir:1,t:null}, items=[];
+            
+            for(let i=0;i<10;i++) { const l=Math.floor(Math.random()*10); items.push({x:40+Math.random()*(W-80),y:150+Math.random()*(H-200),l:l,r:TEACHERS[l].radius*0.6,s:TEACHERS[l].score,w:(l+1)*0.5}); }
+            
+            cvs.onpointerdown = () => { if(hook.st===0) { hook.st=1; AudioSys.sfx('pop'); } };
+            
+            function loop() {
+                if(activeGame!=='B') return;
+                if(Date.now()-lastT>1000) { time--; document.getElementById('timer-b').innerText=time; lastT=Date.now(); if(time<=0) { document.getElementById('final-score-b').innerText=score; document.getElementById('modal-b').style.display='flex'; return; }}
+                
+                if(hook.st===0) { hook.ang+=0.03*hook.dir; if(hook.ang>2.5||hook.ang<0.6) hook.dir*=-1; }
+                else if(hook.st===1) {
+                    hook.len+=15; const hx=hook.x+Math.cos(hook.ang)*hook.len, hy=hook.y+Math.sin(hook.ang)*hook.len;
+                    if(hx<0||hx>W||hy>H) { hook.st=2; hook.sp=20; }
+                    for(let i of items) if(!i.c && Math.hypot(hx-i.x,hy-i.y)<i.r) { hook.st=2; hook.t=i; i.c=true; hook.sp=Math.max(5,20/i.w); AudioSys.sfx('pop'); break; }
+                } else {
+                    hook.len-=hook.sp;
+                    if(hook.len<=30) { hook.len=30; hook.st=0; if(hook.t) { score+=hook.t.s; document.getElementById('score-b').innerText=score; items=items.filter(x=>x!==hook.t); hook.t=null; AudioSys.sfx('win'); if(items.length<2) items.push({x:Math.random()*W,y:200+Math.random()*200,l:5,r:40,s:100,w:2}); } }
+                }
+                
+                ctx.clearRect(0,0,W,H);
+                const tx=hook.x+Math.cos(hook.ang)*hook.len, ty=hook.y+Math.sin(hook.ang)*hook.len;
+                ctx.beginPath(); ctx.moveTo(hook.x,hook.y); ctx.lineTo(tx,ty); ctx.lineWidth=3; ctx.strokeStyle='#333'; ctx.stroke();
+                items.forEach(i => {
+                    let ix=i.c?tx:i.x, iy=i.c?ty+i.r/2:i.y;
+                    ctx.save(); ctx.translate(ix,iy);
+                    if(ASSETS[i.l]) ctx.drawImage(ASSETS[i.l],-i.r,-i.r,i.r*2,i.r*2);
+                    else { ctx.beginPath(); ctx.arc(0,0,i.r,0,6.28); ctx.fillStyle='gold'; ctx.fill(); }
+                    ctx.restore();
+                });
+                ctx.beginPath(); ctx.arc(tx,ty,5,0,6.28); ctx.fillStyle='red'; ctx.fill();
+                gameData.B = requestAnimationFrame(loop);
+            }
+            gameData.B = requestAnimationFrame(loop);
+        }
+
+        // ================= GAME C: 拒腐防变 (New) =================
+        function initGameC() {
+            const cvs = document.getElementById('canvas-c'), ctx = cvs.getContext('2d');
+            const W = cvs.width = cvs.parentElement.clientWidth, H = cvs.height = cvs.parentElement.clientHeight;
+            
+            let bird = { x: 60, y: H/2, vy: 0, r: 25 };
+            let obstacles = []; // money bags
+            let score = 0, state = 0; // 0:ready, 1:play, 2:die
+            let startTime = 0;
+
+            document.getElementById('score-c').innerText = '0';
+            document.getElementById('overlay-c').style.display = 'flex';
+
+            cvs.parentElement.onpointerdown = (e) => {
+                e.preventDefault();
+                if(state===0) { state=1; document.getElementById('overlay-c').style.display='none'; bird.vy=-6; startTime=Date.now(); }
+                else if(state===1) { bird.vy = -7; AudioSys.sfx('pop'); }
+            };
+
+            function loop() {
+                if(activeGame!=='C' || state===2) return;
+                ctx.clearRect(0,0,W,H);
+
+                if(state===1) {
+                    bird.vy += 0.35; bird.y += bird.vy;
+                    score = ((Date.now() - startTime)/1000).toFixed(1);
+                    document.getElementById('score-c').innerText = score;
+
+                    // Spawn obstacles (Money)
+                    if(Math.random() < 0.03) {
+                        obstacles.push({ x: W, y: Math.random()*(H-60), r: 25, type: Math.random()>0.5 ? 'bag':'red' });
+                    }
+
+                    obstacles.forEach(o => o.x -= 4);
+                    obstacles = obstacles.filter(o => o.x > -50);
+
+                    // Collision
+                    if(bird.y<0 || bird.y>H) die();
+                    for(let o of obstacles) {
+                        if(Math.hypot(bird.x-o.x, bird.y-o.y) < (bird.r + o.r - 10)) die();
+                    }
+                }
+
+                // Draw Principal (Index 9: New Principal)
+                const img = ASSETS[9]; 
+                ctx.save(); ctx.translate(bird.x, bird.y); ctx.rotate(bird.vy*0.05);
+                if(img) { 
+                    ctx.beginPath(); ctx.arc(0,0,bird.r,0,6.28); ctx.clip(); 
+                    ctx.drawImage(img, -bird.r, -bird.r, bird.r*2, bird.r*2); 
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+                }
+                ctx.restore();
+
+                // Draw Corruption Items
+                obstacles.forEach(o => {
+                    ctx.font = '40px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+                    ctx.fillText(o.type==='bag' ? '💰' : '🧧', o.x, o.y);
+                });
+
+                gameData.C = requestAnimationFrame(loop);
+            }
+            function die() {
+                state=2; AudioSys.sfx('bad');
+                document.getElementById('final-score-c').innerText = score;
+                document.getElementById('modal-c').style.display = 'flex';
+            }
+            gameData.C = requestAnimationFrame(loop);
+        }
+
+        // ================= GAME D: PVP =================
+        function checkOrientation() { document.getElementById('rotate-tip').style.display = window.innerHeight > window.innerWidth ? 'flex' : 'none'; }
+        function initGameD() {
+            window.addEventListener('resize', checkOrientation); checkOrientation();
+            const cvs = document.getElementById('canvas-d'), ctx = cvs.getContext('2d');
+            const W = cvs.width = cvs.parentElement.clientWidth, H = cvs.height = cvs.parentElement.clientHeight;
+            let p1={x:W*0.2,v:0}, p2={x:W*0.8,v:0}, active=true;
+
+            document.getElementById('p1-btn').onpointerdown=(e)=>{e.preventDefault(); if(active){p1.v+=6; AudioSys.sfx('pop');}};
+            document.getElementById('p2-btn').onpointerdown=(e)=>{e.preventDefault(); if(active){p2.v-=6; AudioSys.sfx('pop');}};
+
+            function loop() {
+                if(activeGame!=='D' || !active) return;
+                p1.x+=p1.v; p2.x+=p2.v; p1.v*=0.9; p2.v*=0.9;
+                if(p2.x-p1.x < 80) { let push=(80-(p2.x-p1.x))/2; p1.x-=push; p2.x+=push; p1.v=-5; p2.v=5; }
+                if(p1.x<0) win('蓝方'); if(p2.x>W) win('红方');
+                
+                ctx.clearRect(0,0,W,H);
+                ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.strokeStyle='#fff'; ctx.setLineDash([10,10]); ctx.stroke();
+                
+                // P1: New Principal
+                ctx.save(); ctx.translate(p1.x, H/2); 
+                ctx.beginPath(); ctx.arc(0,0,40,0,6.28); ctx.fillStyle='#e74c3c'; ctx.fill();
+                if(ASSETS[9]) ctx.drawImage(ASSETS[9],-35,-35,70,70);
+                ctx.restore();
+                // P2: Old Principal
+                ctx.save(); ctx.translate(p2.x, H/2); ctx.scale(-1,1);
+                ctx.beginPath(); ctx.arc(0,0,40,0,6.28); ctx.fillStyle='#3498db'; ctx.fill();
+                if(ASSETS[10]) ctx.drawImage(ASSETS[10],-35,-35,70,70);
+                ctx.restore();
+                
+                gameData.D = requestAnimationFrame(loop);
+            }
+            function win(w) { active=false; AudioSys.sfx('win'); document.getElementById('winner-d').innerText=w+'获胜'; document.getElementById('modal-d').style.display='flex'; }
+            gameData.D = requestAnimationFrame(loop);
+        }
+
+        // ================= GAME E: 巡视 =================
+        function initGameE() {
+            const grid = document.getElementById('grid-e'); grid.innerHTML = '';
+            let score=0, time=30; document.getElementById('score-e').innerText=0; document.getElementById('timer-e').innerText=30;
+            let cells=[];
+            for(let i=0;i<9;i++){
+                let c=document.createElement('div'), img=document.createElement('img');
+                c.className='window-cell'; img.className='window-img'; c.appendChild(img);
+                c.onpointerdown = ()=>{ 
+                    if(c.classList.contains('active')) {
+                        if(c.isBad) { score+=10; AudioSys.sfx('pop'); c.style.backgroundColor='#2ecc71'; }
+                        else { score-=20; AudioSys.sfx('bad'); c.style.backgroundColor='#e74c3c'; }
+                        document.getElementById('score-e').innerText=score;
+                        c.classList.remove('active'); img.classList.remove('show');
+                    }
+                };
+                grid.appendChild(c); cells.push({el:c, img:img});
+            }
+            const tInt = setInterval(()=>{ time--; document.getElementById('timer-e').innerText=time; if(time<=0){ clearInterval(tInt); clearTimeout(sT); document.getElementById('final-score-e').innerText=score; document.getElementById('modal-e').style.display='flex'; }},1000);
+            let sT;
+            function spawn() {
+                let empty = cells.filter(c=>!c.el.classList.contains('active'));
+                if(empty.length) {
+                    let cell = empty[Math.floor(Math.random()*empty.length)];
+                    cell.el.isBad = Math.random()>0.3; // 70% bad
+                    let id = cell.el.isBad ? Math.floor(Math.random()*5) : 9; // Bad: 0-4, Good: 9(Principal)
+                    cell.img.src = ASSETS[id].src;
+                    cell.el.classList.add('active'); cell.el.classList.add('lit'); cell.img.classList.add('show'); cell.el.style.backgroundColor='#555';
+                    setTimeout(()=>{ cell.el.classList.remove('active'); cell.el.classList.remove('lit'); cell.img.classList.remove('show'); }, 1200);
+                }
+                sT = setTimeout(spawn, 600);
+            }
+            spawn(); gameData.E = { timer:tInt, spawnTimer:sT };
+        }
+
+        // ================= GAME F: 慧眼识人 (New Memory) =================
+        function initGameF() {
+            const grid = document.getElementById('grid-f');
+            grid.innerHTML = '';
+            
+            // Generate pairs: 8 pairs for 4x4 grid
+            let indices = [0,1,2,3,4,5,6,9]; // Use distinct faces
+            let pairs = [...indices, ...indices];
+            // Shuffle
+            for(let i=pairs.length-1; i>0; i--) { const j=Math.floor(Math.random()*(i+1)); [pairs[i],pairs[j]]=[pairs[j],pairs[i]]; }
+
+            let opened = [], matched = 0, time = 45;
+            document.getElementById('timer-f').innerText = time;
+            
+            pairs.forEach((pid, i) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<div class="card-face card-front">?</div><div class="card-face card-back"><img src="${ASSETS[pid].src}"></div>`;
+                card.onclick = () => {
+                    if(opened.length < 2 && !card.classList.contains('flipped') && !card.classList.contains('matched')) {
+                        card.classList.add('flipped');
+                        AudioSys.sfx('flip');
+                        opened.push({ el: card, id: pid });
+                        if(opened.length === 2) checkMatch();
+                    }
+                };
+                grid.appendChild(card);
+            });
+
+            function checkMatch() {
+                const [c1, c2] = opened;
+                if(c1.id === c2.id) {
+                    AudioSys.sfx('pop');
+                    setTimeout(() => {
+                        c1.el.classList.add('matched'); c2.el.classList.add('matched');
+                        opened = []; matched++;
+                        if(matched === 8) win();
+                    }, 500);
+                } else {
+                    AudioSys.sfx('bad');
+                    setTimeout(() => {
+                        c1.el.classList.remove('flipped'); c2.el.classList.remove('flipped');
+                        opened = [];
+                    }, 800);
+                }
+            }
+
+            const tInt = setInterval(() => {
+                time--; document.getElementById('timer-f').innerText = time;
+                if(time <= 0) {
+                    clearInterval(tInt);
+                    document.getElementById('title-f').innerText = "任命失败";
+                    document.getElementById('title-f').style.color = "#e74c3c";
+                    document.getElementById('final-score-f').innerText = "超时";
+                    document.getElementById('modal-f').style.display = 'flex';
+                }
+            }, 1000);
+
+            function win() {
+                clearInterval(tInt);
+                AudioSys.sfx('win');
+                document.getElementById('title-f').innerText = "任命完成!";
+                document.getElementById('title-f').style.color = "#2ecc71";
+                document.getElementById('final-score-f').innerText = (45 - time);
+                document.getElementById('modal-f').style.display = 'flex';
+            }
+
+            gameData.F = { timer: tInt };
+        }
+
+    </script>
+</body>
+</html>
+
