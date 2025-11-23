@@ -2,6 +2,8 @@
 <html lang="zh-CN">
 <head>
 
+
+
 // 在 UserSys.init() 后面调用 CloudSys.init();
 </script>
     <meta charset="UTF-8">
@@ -261,6 +263,95 @@
             flex-direction: column; justify-content: center; align-items: center; text-align: center;
         }
 
+/* --- 论坛/聊天室样式 --- */
+.forum-container {
+    height: 350px;
+    display: flex;
+    flex-direction: column;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.chat-item {
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+}
+
+.chat-item.mine {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.chat-item.other {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.chat-meta {
+    font-size: 0.7rem;
+    color: #999;
+    margin-bottom: 2px;
+    padding: 0 5px;
+}
+
+.chat-bubble {
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    word-wrap: break-word;
+    line-height: 1.4;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.chat-item.mine .chat-bubble {
+    background: #95ec69; /* 微信绿 */
+    color: #000;
+    border-top-right-radius: 2px;
+}
+
+.chat-item.other .chat-bubble {
+    background: #fff;
+    border: 1px solid #eee;
+    border-top-left-radius: 2px;
+}
+
+.forum-input-area {
+    display: flex;
+    gap: 5px;
+    padding-top: 5px;
+}
+
+.forum-input-area input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+}
+
+.forum-input-area button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
     </style>
 </head>
 <body>
@@ -304,13 +395,50 @@
         </div>
     </div>
 
+<div id="forum-modal" class="modal">
+    <div class="modal-box" style="width: 95%; max-width: 400px; padding: 15px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0; color:var(--dark);">🏫 校园广场 (校友圈)</h3>
+            <button onclick="CloudSys.loadMessages()" style="background:transparent; border:none; font-size:1.2rem; cursor:pointer;">🔄</button>
+        </div>
+        
+        <!-- 聊天记录区域 -->
+        <div class="forum-container">
+            <div id="chat-list" class="chat-list">
+                <div style="text-align:center; color:#999; margin-top:20px;">正在加载教务处留言...</div>
+            </div>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="forum-input-area">
+            <input type="text" id="forum-input" placeholder="文明发言，禁止早恋..." maxlength="50">
+            <button onclick="CloudSys.sendMessage()">发送</button>
+        </div>
+
+        <div style="font-size:0.7rem; color:#e74c3c; margin-top:8px; text-align:left;">
+            * ⚠️ 警告：教务处正在监控此频道。违规发言将扣除量化分并封号。
+        </div>
+
+        <button class="action-btn btn-menu" onclick="document.getElementById('forum-modal').style.display='none'" style="margin-top:10px;">关闭</button>
+    </div>
+</div>
+
     <div id="menu-screen" class="full-screen">
         <div class="animated-bg"></div>
                 <div class="menu-header">
             <button class="btn-notice" onclick="openNotice()">📢</button>
+            <button class="btn-forum" onclick="CloudSys.openForum()" style="
+    position: absolute; top: 10px; right: 100px; /* 调整位置避免重叠 */
+    background: #3498db; color: white;
+    border: 2px solid var(--dark); border-radius: 50%;
+    width: 36px; height: 36px; font-size: 1.2rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 10;
+">💬</button>
             <button class="btn-rank" onclick="CloudSys.openRankPanel()">🏆</button>
             <button class="btn-profile" onclick="UserSys.openProfile()">👤</button>
-            <div class="menu-title">南沙河中学<br>大冒险</div>
+            <div class="menu-title"><br>南中大冒险</div>
             <div class="menu-subtitle">V5.0 (量化考核版)</div>
         </div>
 
@@ -567,87 +695,144 @@
             reset: () => { if(confirm("确定要销毁档案吗？(数据将清空)")) { localStorage.removeItem(UserSys.key); location.reload(); } }
         };
 
-        // --- 云端系统 (LeanCloud 增强版) ---
-        const CloudSys = {
-            enabled: false,
-            init: () => {
-                const APP_ID = "ClQ56mtSJOXyNtufV0Vcg7Uj-MdYXbMMI";     
-                const APP_KEY = "kvFqvwOT85rZXDqQ5384E8Xf";
-                const SERVER_URL = "https://clq56mts.api.lncldglobal.com";
+const CloudSys = {
+    enabled: false,
+    init: () => {
+        // *** 你的 LeanCloud ID 和 Key ***
+        const APP_ID = "ClQ56mtSJOXyNtufV0Vcg7Uj-MdYXbMMI";
+        const APP_KEY = "kvFqvwOT85rZXDqQ5384E8Xf";
+        const SERVER_URL = "https://clq56mts.api.lncldglobal.com";
 
-                if (typeof AV !== 'undefined' && APP_ID && APP_KEY) {
-                    try {
-                        AV.init({ appId: APP_ID, appKey: APP_KEY, serverURL: SERVER_URL });
-                        CloudSys.enabled = true;
-                        console.log("云端连接成功");
-                    } catch(e) { console.error("云端初始化失败", e); }
-                }
-            },
-            
-            // 上传分数
-            upload: (mode, score) => {
-                if(!CloudSys.enabled) return;
-                const ScoreObj = AV.Object.extend('GameScores');
-                const record = new ScoreObj();
-                record.set('studentName', UserSys.data.name);
-                record.set('studentClass', UserSys.data.class);
-                record.set('score', Number(score));
-                record.set('mode', mode);
-                record.save().catch(e => console.error(e));
-            },
+        if (typeof AV !== 'undefined' && APP_ID && APP_KEY) {
+            try {
+                AV.init({ appId: APP_ID, appKey: APP_KEY, serverURLs: SERVER_URL });
+                CloudSys.enabled = true;
+                console.log("云端连接成功");
+            } catch(e) { console.error("云端初始化失败", e); }
+        }
+    },
 
-            // 打开排行榜面板 (复用公告弹窗)
-            openRankPanel: () => {
-                if(!CloudSys.enabled) { alert("请先在代码中配置 LeanCloud AppID 和 Key 才能使用联网排行！"); return; }
+    // --- 上传分数 ---
+    upload: (mode, score) => {
+        if(!CloudSys.enabled) return;
+        const ScoreObj = AV.Object.extend('GameScores');
+        const record = new ScoreObj();
+        record.set('studentName', UserSys.data.name);
+        record.set('studentClass', UserSys.data.class);
+        record.set('score', Number(score));
+        record.set('mode', mode);
+        record.save().catch(e => console.error(e));
+    },
+
+    // --- 排行榜逻辑 (保持不变) ---
+    openRankPanel: () => {
+        if(!CloudSys.enabled) { alert("云端未连接"); return; }
+        const mode = prompt("输入游戏代码查询(A-F):", "A");
+        if(!mode) return;
+        const gameMode = mode.toUpperCase();
+        if(!['A','B','C','D','E','F'].includes(gameMode)) return;
+
+        const noticeBox = document.querySelector('#notice-modal .notice-content');
+        document.querySelector('#notice-modal h3').innerText = `🏆 游戏 [${gameMode}] 排行榜`;
+        noticeBox.innerHTML = '<div style="text-align:center;">加载中...</div>';
+        document.getElementById('notice-modal').style.display = 'flex';
+
+        const query = new AV.Query('GameScores');
+        query.equalTo('mode', gameMode);
+        if(gameMode === 'F') query.ascending('score'); else query.descending('score');
+        query.limit(10);
+        query.find().then(results => {
+            let html = '<table style="width:100%; border-collapse:collapse; font-size:0.9rem;">';
+            html += '<tr style="background:#eee;"><th style="padding:5px;">名</th><th>班</th><th>人</th><th>分</th></tr>';
+            results.forEach((r, i) => {
+                const color = i<3 ? 'color:#e67e22; font-weight:bold;' : '';
+                html += `<tr><td style="padding:5px;${color}">${i+1}</td><td>${r.get('studentClass')}</td><td>${r.get('studentName')}</td><td>${r.get('score')}</td></tr>`;
+            });
+            html += '</table>';
+            noticeBox.innerHTML = html || '暂无数据';
+        });
+    },
+
+    // --- 新增：打开论坛 ---
+    openForum: () => {
+        if(!CloudSys.enabled) { alert("请先连接网络！"); return; }
+        document.getElementById('forum-modal').style.display = 'flex';
+        CloudSys.loadMessages();
+    },
+
+    // --- 新增：拉取留言 ---
+    loadMessages: () => {
+        const list = document.getElementById('chat-list');
+        // 不要清空 list，体验更好，或者显示加载中
+        const query = new AV.Query('SchoolForum');
+        query.descending('createdAt'); // 最新的在前面
+        query.limit(30); // 取最近30条
+
+        query.find().then(msgs => {
+            list.innerHTML = '';
+            // LeanCloud 返回的是时间倒序，为了聊天习惯，我们在界面上倒过来显示（旧的在上面，新的在下面）
+            // 或者直接用 flex-direction: column-reverse; 这里我们手动 reverse 数组
+            msgs.reverse().forEach(m => {
+                const isMine = (m.get('studentName') === UserSys.data.name && m.get('studentClass') === UserSys.data.class);
+                const date = m.createdAt;
+                const timeStr = `${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
                 
-                // 弹出输入框让用户选模式
-                const mode = prompt("请输入要查询的游戏代码：\nA=合成\nB=贸易\nC=防腐\nD=PK\nE=巡视\nF=识人", "A");
-                if(!mode) return;
+                const div = document.createElement('div');
+                div.className = `chat-item ${isMine ? 'mine' : 'other'}`;
                 
-                const gameMode = mode.toUpperCase();
-                if(!['A','B','C','D','E','F'].includes(gameMode)) { alert("无效的游戏代码"); return; }
+                // 防 XSS：使用 textContent 而不是 innerHTML
+                div.innerHTML = `
+                    <div class="chat-meta">${m.get('studentClass')} ${m.get('studentName')} · ${timeStr}</div>
+                    <div class="chat-bubble"></div>
+                `;
+                div.querySelector('.chat-bubble').textContent = m.get('content'); // 安全插入文本
+                list.appendChild(div);
+            });
+            // 滚动到底部
+            list.scrollTop = list.scrollHeight;
+        }).catch(e => {
+            list.innerHTML = `<div style="text-align:center; color:red;">加载失败: ${e.message}</div>`;
+        });
+    },
 
-                // 显示“加载中...”
-                const noticeBox = document.querySelector('#notice-modal .notice-content');
-                document.querySelector('#notice-modal h3').innerText = `🏆 游戏 [${gameMode}] 排行榜`;
-                noticeBox.innerHTML = '<div style="text-align:center; padding:20px;">正在从教务处拉取数据...</div>';
-                document.getElementById('notice-modal').style.display = 'flex';
+    // --- 新增：发送留言 ---
+    sendMessage: () => {
+        const input = document.getElementById('forum-input');
+        const content = input.value.trim();
+        if(!content) return;
+        if(content.length > 50) { alert("话太多了，校长不喜欢！(限50字)"); return; }
 
-                // 查询云端
-                const query = new AV.Query('GameScores');
-                query.equalTo('mode', gameMode);
-                // 游戏 F 是时间越短越好，其他是分越高越好
-                if(gameMode === 'F') query.ascending('score'); 
-                else query.descending('score');
-                
-                query.limit(10); // 取前10名
+        // 简单的脏话过滤
+        const badWords = ['傻', '死', '猪', '滚', '垃圾', '笨'];
+        if(badWords.some(w => content.includes(w))) {
+            alert("⚠️ 系统提示：检测到不文明用语，扣除量化分 1 分！");
+            UserSys.deduct("校园论坛", 1, "发表不当言论");
+            input.value = '';
+            return;
+        }
 
-                query.find().then(results => {
-                    let html = '<table style="width:100%; border-collapse:collapse; font-size:0.9rem;">';
-                    html += '<tr style="background:#eee; text-align:left;"><th style="padding:5px;">排名</th><th>班级</th><th>姓名</th><th>分数</th></tr>';
-                    
-                    if(results.length === 0) {
-                        html += '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">暂无数据，快去抢沙发！</td></tr>';
-                    } else {
-                        results.forEach((r, i) => {
-                            const medal = i===0?'🥇':(i===1?'🥈':(i===2?'🥉':(i+1)));
-                            const color = i<3 ? 'color:#e67e22; font-weight:bold;' : '';
-                            html += `<tr style="border-bottom:1px dashed #ddd;">
-                                <td style="padding:8px; ${color}">${medal}</td>
-                                <td>${r.get('studentClass')}</td>
-                                <td>${r.get('studentName')}</td>
-                                <td style="font-weight:bold;">${r.get('score')}</td>
-                            </tr>`;
-                        });
-                    }
-                    html += '</table>';
-                    html += '<p style="font-size:0.8rem; color:#999; margin-top:10px; text-align:center;">* 仅显示全校前10名卷王</p>';
-                    noticeBox.innerHTML = html;
-                }).catch(error => {
-                    noticeBox.innerHTML = `<div style="color:red; text-align:center;">获取失败: ${error.message}</div>`;
-                });
-            }
-        };
+        const ForumObj = AV.Object.extend('SchoolForum');
+        const post = new ForumObj();
+        post.set('studentName', UserSys.data.name);
+        post.set('studentClass', UserSys.data.class);
+        post.set('content', content);
+        
+        // 禁用按钮防止连点
+        const btn = document.querySelector('.forum-input-area button');
+        const oldText = btn.innerText;
+        btn.disabled = true; btn.innerText = '...';
+
+        post.save().then(() => {
+            input.value = ''; // 清空输入框
+            CloudSys.loadMessages(); // 刷新列表
+            AudioSys.sfx('pop'); // 音效
+        }).catch(e => {
+            alert("发送失败: " + e.message);
+        }).finally(() => {
+            btn.disabled = false; btn.innerText = oldText;
+        });
+    }
+};
           
         
 
