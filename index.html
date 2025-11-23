@@ -1,91 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<script src="//cdn.jsdelivr.net/npm/leancloud-storage@4.15.0/dist/av-min.js">
-        // --- 云端系统 (LeanCloud 增强版) ---
-        const CloudSys = {
-            enabled: false,
-            init: () => {
-                // *** 请务必在这里填入你的 LeanCloud ID 和 Key 才能生效 ***
-                // 如果没有填，点击按钮会提示“未连接云端”
-                const APP_ID = "ClQ56mtSJOXyNtufV0Vcg7Uj-MdYXbMMI";     // 例如: "AbC123..."
-                const APP_KEY = "kvFqvwOT85rZXDqQ5384E8Xf";    // 例如: "XyZ789..."
-                const SERVER_URL = "https://clq56mts.api.lncldglobal.com"; // 国际版必填
-
-                if (typeof AV !== 'undefined' && APP_ID && APP_KEY) {
-                    try {
-                        AV.init({ appId: APP_ID, appKey: APP_KEY, serverURL: SERVER_URL });
-                        CloudSys.enabled = true;
-                        console.log("云端连接成功");
-                    } catch(e) { console.error("云端初始化失败", e); }
-                }
-            },
-            
-            // 上传分数
-            upload: (mode, score) => {
-                if(!CloudSys.enabled) return;
-                const ScoreObj = AV.Object.extend('GameScores');
-                const record = new ScoreObj();
-                record.set('studentName', UserSys.data.name);
-                record.set('studentClass', UserSys.data.class);
-                record.set('score', Number(score));
-                record.set('mode', mode);
-                record.save().catch(e => console.error(e));
-            },
-
-            // 打开排行榜面板 (复用公告弹窗)
-            openRankPanel: () => {
-                if(!CloudSys.enabled) { alert("请先在代码中配置 LeanCloud AppID 和 Key 才能使用联网排行！"); return; }
-                
-                // 弹出输入框让用户选模式
-                const mode = prompt("请输入要查询的游戏代码：\nA=合成\nB=贸易\nC=防腐\nD=PK\nE=巡视\nF=识人", "A");
-                if(!mode) return;
-                
-                const gameMode = mode.toUpperCase();
-                if(!['A','B','C','D','E','F'].includes(gameMode)) { alert("无效的游戏代码"); return; }
-
-                // 显示“加载中...”
-                const noticeBox = document.querySelector('#notice-modal .notice-content');
-                document.querySelector('#notice-modal h3').innerText = `🏆 游戏 [${gameMode}] 排行榜`;
-                noticeBox.innerHTML = '<div style="text-align:center; padding:20px;">正在从教务处拉取数据...</div>';
-                document.getElementById('notice-modal').style.display = 'flex';
-
-                // 查询云端
-                const query = new AV.Query('GameScores');
-                query.equalTo('mode', gameMode);
-                // 游戏 F 是时间越短越好，其他是分越高越好
-                if(gameMode === 'F') query.ascending('score'); 
-                else query.descending('score');
-                
-                query.limit(10); // 取前10名
-
-                query.find().then(results => {
-                    let html = '<table style="width:100%; border-collapse:collapse; font-size:0.9rem;">';
-                    html += '<tr style="background:#eee; text-align:left;"><th style="padding:5px;">排名</th><th>班级</th><th>姓名</th><th>分数</th></tr>';
-                    
-                    if(results.length === 0) {
-                        html += '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">暂无数据，快去抢沙发！</td></tr>';
-                    } else {
-                        results.forEach((r, i) => {
-                            const medal = i===0?'🥇':(i===1?'🥈':(i===2?'🥉':(i+1)));
-                            const color = i<3 ? 'color:#e67e22; font-weight:bold;' : '';
-                            html += `<tr style="border-bottom:1px dashed #ddd;">
-                                <td style="padding:8px; ${color}">${medal}</td>
-                                <td>${r.get('studentClass')}</td>
-                                <td>${r.get('studentName')}</td>
-                                <td style="font-weight:bold;">${r.get('score')}</td>
-                            </tr>`;
-                        });
-                    }
-                    html += '</table>';
-                    html += '<p style="font-size:0.8rem; color:#999; margin-top:10px; text-align:center;">* 仅显示全校前10名卷王</p>';
-                    noticeBox.innerHTML = html;
-                }).catch(error => {
-                    noticeBox.innerHTML = `<div style="color:red; text-align:center;">获取失败: ${error.message}</div>`;
-                });
-            }
-        };
-
 
 // 在 UserSys.init() 后面调用 CloudSys.init();
 </script>
@@ -652,14 +567,13 @@
             reset: () => { if(confirm("确定要销毁档案吗？(数据将清空)")) { localStorage.removeItem(UserSys.key); location.reload(); } }
         };
 
-        // --- 云端系统 (已修复 openRankPanel) ---
+        // --- 云端系统 (LeanCloud 增强版) ---
         const CloudSys = {
             enabled: false,
             init: () => {
-                // *** 在这里填入你的 LeanCloud ID 和 Key ***
-                const APP_ID = "ClQ56mtSJOXyNtufV0Vcg7Uj-MdYXbMMI"; // 例如: "AbC123..."
-                const APP_KEY = "kvFqvwOT85rZXDqQ5384E8Xf"; // 例如: "XyZ789..."
-                const SERVER_URL = "https://clq56mts.api.lncldglobal.com"; // 国际版必填
+                const APP_ID = "ClQ56mtSJOXyNtufV0Vcg7Uj-MdYXbMMI";     
+                const APP_KEY = "kvFqvwOT85rZXDqQ5384E8Xf";
+                const SERVER_URL = "https://clq56mts.api.lncldglobal.com";
 
                 if (typeof AV !== 'undefined' && APP_ID && APP_KEY) {
                     try {
@@ -669,6 +583,7 @@
                     } catch(e) { console.error("云端初始化失败", e); }
                 }
             },
+            
             // 上传分数
             upload: (mode, score) => {
                 if(!CloudSys.enabled) return;
@@ -680,7 +595,8 @@
                 record.set('mode', mode);
                 record.save().catch(e => console.error(e));
             },
-            // 打开排行榜面板 (就是这里缺了导致报错)
+
+            // 打开排行榜面板 (复用公告弹窗)
             openRankPanel: () => {
                 if(!CloudSys.enabled) { alert("请先在代码中配置 LeanCloud AppID 和 Key 才能使用联网排行！"); return; }
                 
@@ -691,16 +607,20 @@
                 const gameMode = mode.toUpperCase();
                 if(!['A','B','C','D','E','F'].includes(gameMode)) { alert("无效的游戏代码"); return; }
 
-                // 利用公告弹窗显示排行榜
+                // 显示“加载中...”
                 const noticeBox = document.querySelector('#notice-modal .notice-content');
                 document.querySelector('#notice-modal h3').innerText = `🏆 游戏 [${gameMode}] 排行榜`;
                 noticeBox.innerHTML = '<div style="text-align:center; padding:20px;">正在从教务处拉取数据...</div>';
                 document.getElementById('notice-modal').style.display = 'flex';
 
+                // 查询云端
                 const query = new AV.Query('GameScores');
                 query.equalTo('mode', gameMode);
-                if(gameMode === 'F') query.ascending('score'); else query.descending('score');
-                query.limit(10); 
+                // 游戏 F 是时间越短越好，其他是分越高越好
+                if(gameMode === 'F') query.ascending('score'); 
+                else query.descending('score');
+                
+                query.limit(10); // 取前10名
 
                 query.find().then(results => {
                     let html = '<table style="width:100%; border-collapse:collapse; font-size:0.9rem;">';
@@ -728,6 +648,8 @@
                 });
             }
         };
+          
+        
 
         // --- 音频系统 ---
         const AudioSys = {
