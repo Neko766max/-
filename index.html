@@ -9,7 +9,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>南沙河中学: 廉洁校园行动 (量化版)</title>
-    <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+<script src="https://unpkg.com/bmob.js-sdk-v4@4.0.0/dist/Bmob-4.0.0.min.js"></script>
     <style>
         :root {
             --primary: #4a90e2;
@@ -698,16 +698,16 @@
 const CloudSys = {
     enabled: false,
     init: () => {
-        // *** 你的 LeanCloud ID 和 Key ***
-        const APP_ID = "ClQ56mtSJOXyNtufV0Vcg7Uj-MdYXbMMI";
-        const APP_KEY = "kvFqvwOT85rZXDqQ5384E8Xf";
-        const SERVER_URL = "https://clq56mts.api.lncldglobal.com";
+        // *** 这里填入你在 Bmob 后台获取的密钥 ***
+        const SECRET_KEY = "f5a17c368d5ba28f"; 
+        const API_KEY = "d7aa8c70a1c693cd179de3733a03b59d";
 
-        if (typeof AV !== 'undefined' && APP_ID && APP_KEY) {
+        if (typeof Bmob !== 'undefined') {
             try {
-                AV.init({ appId: APP_ID, appKey: APP_KEY, serverURLs: SERVER_URL });
+                // Bmob 初始化
+                Bmob.initialize(SECRET_KEY, API_KEY);
                 CloudSys.enabled = true;
-                console.log("云端连接成功");
+                console.log("云端(Bmob)连接成功");
             } catch(e) { console.error("云端初始化失败", e); }
         }
     },
@@ -715,16 +715,19 @@ const CloudSys = {
     // --- 上传分数 ---
     upload: (mode, score) => {
         if(!CloudSys.enabled) return;
-        const ScoreObj = AV.Object.extend('GameScores');
-        const record = new ScoreObj();
-        record.set('studentName', UserSys.data.name);
-        record.set('studentClass', UserSys.data.class);
-        record.set('score', Number(score));
-        record.set('mode', mode);
-        record.save().catch(e => console.error(e));
+        const query = Bmob.Query('GameScores');
+        query.set('studentName', UserSys.data.name);
+        query.set('studentClass', UserSys.data.class);
+        query.set('score', Number(score));
+        query.set('mode', mode);
+        query.save().then(res => {
+            console.log('分数上传成功');
+        }).catch(err => {
+            console.error('上传失败', err);
+        });
     },
 
-    // --- 排行榜逻辑 (保持不变) ---
+    // --- 排行榜逻辑 ---
     openRankPanel: () => {
         if(!CloudSys.enabled) { alert("云端未连接"); return; }
         const mode = prompt("输入游戏代码查询(A-F):", "A");
@@ -734,76 +737,81 @@ const CloudSys = {
 
         const noticeBox = document.querySelector('#notice-modal .notice-content');
         document.querySelector('#notice-modal h3').innerText = `🏆 游戏 [${gameMode}] 排行榜`;
-        noticeBox.innerHTML = '<div style="text-align:center;">加载中...</div>';
+        noticeBox.innerHTML = '<div style="text-align:center;">正在加载中...</div>';
         document.getElementById('notice-modal').style.display = 'flex';
 
-        const query = new AV.Query('GameScores');
-        query.equalTo('mode', gameMode);
-        if(gameMode === 'F') query.ascending('score'); else query.descending('score');
+        const query = Bmob.Query('GameScores');
+        query.equalTo("mode", "==", gameMode);
+        // Bmob 排序语法: order("score") 升序, order("-score") 降序
+        if(gameMode === 'F') query.order("score"); else query.order("-score");
         query.limit(10);
+        
         query.find().then(results => {
             let html = '<table style="width:100%; border-collapse:collapse; font-size:0.9rem;">';
             html += '<tr style="background:#eee;"><th style="padding:5px;">名</th><th>班</th><th>人</th><th>分</th></tr>';
-            results.forEach((r, i) => {
-                const color = i<3 ? 'color:#e67e22; font-weight:bold;' : '';
-                html += `<tr><td style="padding:5px;${color}">${i+1}</td><td>${r.get('studentClass')}</td><td>${r.get('studentName')}</td><td>${r.get('score')}</td></tr>`;
-            });
-            html += '</table>';
-            noticeBox.innerHTML = html || '暂无数据';
+            
+            // Bmob 返回的是普通数组，直接读取属性即可
+            if(results.length === 0) {
+                html = '<div style="text-align:center; padding:20px;">暂无数据，快来抢第一!</div>';
+            } else {
+                results.forEach((r, i) => {
+                    const color = i<3 ? 'color:#e67e22; font-weight:bold;' : '';
+                    html += `<tr><td style="padding:5px;${color}">${i+1}</td><td>${r.studentClass}</td><td>${r.studentName}</td><td>${r.score}</td></tr>`;
+                });
+                html += '</table>';
+            }
+            noticeBox.innerHTML = html;
+        }).catch(err => {
+            noticeBox.innerHTML = "加载失败: " + JSON.stringify(err);
         });
     },
 
-    // --- 新增：打开论坛 ---
+    // --- 打开论坛 ---
     openForum: () => {
         if(!CloudSys.enabled) { alert("请先连接网络！"); return; }
         document.getElementById('forum-modal').style.display = 'flex';
         CloudSys.loadMessages();
     },
 
-    // --- 新增：拉取留言 ---
+    // --- 拉取留言 ---
     loadMessages: () => {
         const list = document.getElementById('chat-list');
-        // 不要清空 list，体验更好，或者显示加载中
-        const query = new AV.Query('SchoolForum');
-        query.descending('createdAt'); // 最新的在前面
-        query.limit(30); // 取最近30条
+        const query = Bmob.Query('SchoolForum');
+        query.order("-createdAt"); // 按创建时间倒序
+        query.limit(30);
 
         query.find().then(msgs => {
             list.innerHTML = '';
-            // LeanCloud 返回的是时间倒序，为了聊天习惯，我们在界面上倒过来显示（旧的在上面，新的在下面）
-            // 或者直接用 flex-direction: column-reverse; 这里我们手动 reverse 数组
+            // Bmob返回的是数组，我们在前端反转顺序以符合聊天习惯
             msgs.reverse().forEach(m => {
-                const isMine = (m.get('studentName') === UserSys.data.name && m.get('studentClass') === UserSys.data.class);
-                const date = m.createdAt;
-                const timeStr = `${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
+                const isMine = (m.studentName === UserSys.data.name && m.studentClass === UserSys.data.class);
+                // Bmob 的 createdAt 是字符串，处理一下时间显示
+                const dateStr = m.createdAt.split(' ')[1].substring(0, 5); // 取 "HH:mm"
                 
                 const div = document.createElement('div');
                 div.className = `chat-item ${isMine ? 'mine' : 'other'}`;
                 
-                // 防 XSS：使用 textContent 而不是 innerHTML
                 div.innerHTML = `
-                    <div class="chat-meta">${m.get('studentClass')} ${m.get('studentName')} · ${timeStr}</div>
+                    <div class="chat-meta">${m.studentClass} ${m.studentName} · ${dateStr}</div>
                     <div class="chat-bubble"></div>
                 `;
-                div.querySelector('.chat-bubble').textContent = m.get('content'); // 安全插入文本
+                div.querySelector('.chat-bubble').textContent = m.content; 
                 list.appendChild(div);
             });
-            // 滚动到底部
             list.scrollTop = list.scrollHeight;
         }).catch(e => {
             list.innerHTML = `<div style="text-align:center; color:red;">加载失败: ${e.message}</div>`;
         });
     },
 
-    // --- 新增：发送留言 ---
+    // --- 发送留言 ---
     sendMessage: () => {
         const input = document.getElementById('forum-input');
         const content = input.value.trim();
         if(!content) return;
         if(content.length > 50) { alert("话太多了，校长不喜欢！(限50字)"); return; }
 
-        // 简单的脏话过滤
-        const badWords = ['傻', '死', '猪', '滚', '垃圾', '笨'];
+        const badWords = ['傻', '死', '猪', '滚', '垃圾', '笨', '日', '操'];
         if(badWords.some(w => content.includes(w))) {
             alert("⚠️ 系统提示：检测到不文明用语，扣除量化分 1 分！");
             UserSys.deduct("校园论坛", 1, "发表不当言论");
@@ -811,28 +819,27 @@ const CloudSys = {
             return;
         }
 
-        const ForumObj = AV.Object.extend('SchoolForum');
-        const post = new ForumObj();
-        post.set('studentName', UserSys.data.name);
-        post.set('studentClass', UserSys.data.class);
-        post.set('content', content);
+        const query = Bmob.Query('SchoolForum');
+        query.set('studentName', UserSys.data.name);
+        query.set('studentClass', UserSys.data.class);
+        query.set('content', content);
         
-        // 禁用按钮防止连点
         const btn = document.querySelector('.forum-input-area button');
         const oldText = btn.innerText;
         btn.disabled = true; btn.innerText = '...';
 
-        post.save().then(() => {
-            input.value = ''; // 清空输入框
-            CloudSys.loadMessages(); // 刷新列表
-            AudioSys.sfx('pop'); // 音效
+        query.save().then(res => {
+            input.value = ''; 
+            CloudSys.loadMessages(); 
+            AudioSys.sfx('pop'); 
         }).catch(e => {
-            alert("发送失败: " + e.message);
+            alert("发送失败: " + JSON.stringify(e));
         }).finally(() => {
             btn.disabled = false; btn.innerText = oldText;
         });
     }
 };
+
           
         
 
